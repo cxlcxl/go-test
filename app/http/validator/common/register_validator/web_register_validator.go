@@ -5,6 +5,7 @@ import (
 	"goskeleton/app/http/validator/common/upload_files"
 	"goskeleton/app/http/validator/common/websocket"
 	"goskeleton/app/http/validator/web/news"
+	"goskeleton/app/http/validator/web/roles"
 	"goskeleton/app/http/validator/web/users"
 )
 
@@ -14,21 +15,18 @@ func WebRegisterValidator() {
 	containers := container.CreateContainersFactory()
 	// 验证器注册 map
 	validators := map[string]interface{}{
-		// Users 模块表单验证器按照 key => value 形式注册在容器，方便路由模块中调用
-		"UsersLogin":   users.Login{},
-		"UsersLogout":  users.Logout{},
-		"RefreshToken": users.RefreshToken{},
-		// Users基本操作（CURD）
-		"UsersShow":    users.Show{},
-		"UsersStore":   users.Store{},
-		"UsersUpdate":  users.Update{},
-		"UsersDestroy": users.Destroy{},
-		// 文件上传
-		"UploadFiles": upload_files.UpFiles{},
-		// Websocket 连接验证器
+		"UsersLogin":       users.Login{},
+		"UsersLogout":      users.Logout{},
+		"RefreshToken":     users.RefreshToken{},
+		"UsersShow":        users.Show{},
+		"UsersStore":       users.Store{},
+		"UsersUpdate":      users.Update{},
+		"UsersDestroy":     users.Destroy{},
+		"NewsStore":        news.Store{},
+		"RolesStore":       roles.Store{},
+		"RolesUpdate":      roles.Update{},
+		"UploadFiles":      upload_files.UpFiles{}, // 文件上传
 		"WebsocketConnect": websocket.Connect{},
-		// News 验证器
-		"NewsStore": news.Store{},
 	}
 
 	for validator, forStruct := range validators {

@@ -24,15 +24,17 @@ func CreateUserFactory(sqlType string) *UsersModel {
 
 type UsersModel struct {
 	BaseModel     `json:"-"`
-	UserName      string         `gorm:"column:user_name" json:"user_name"`
+	UserName      string         `json:"user_name" gorm:"column:user_name"`
 	Pass          string         `json:"-"`
 	Email         string         `json:"email"`
 	Phone         string         `json:"phone"`
 	Avatar        string         `json:"avatar"`
-	RealName      string         `gorm:"column:real_name" json:"real_name"`
+	RealName      string         `json:"real_name" gorm:"column:real_name"`
+	RoleId        int64          `json:"role_id" gorm:"column:role_id"`
 	Status        int            `json:"status"`
 	Token         string         `json:"token"`
-	LastLoginTime tool.LocalTime `gorm:"column:last_login_time" json:"last_login_time"`
+	Role          RoleModel      `json:"roles"`
+	LastLoginTime tool.LocalTime `json:"last_login_time" gorm:"column:last_login_time"`
 	*BaseColumns
 }
 
@@ -42,9 +44,9 @@ func (u *UsersModel) TableName() string {
 }
 
 // Store 用户注册（写一个最简单的使用账号、密码注册即可）
-func (u *UsersModel) Store(userName, pass, email, phone, realName string) bool {
-	sql := "INSERT INTO users(user_name,pass,email,phone,real_name) VALUES(?,?,?,?,?)"
-	result := u.Exec(sql, userName, pass, email, phone, realName)
+func (u *UsersModel) Store(values map[string]interface{}) bool {
+	// sql := "INSERT INTO users(user_name,pass,email,phone,real_name,role_id) VALUES(?,?,?,?,?,?)"
+	result := u.Create(values)
 	if result.RowsAffected > 0 {
 		return true
 	} else {
@@ -54,7 +56,7 @@ func (u *UsersModel) Store(userName, pass, email, phone, realName string) bool {
 
 // Login 用户登录
 func (u *UsersModel) Login(userName, pass, ip string) (*UsersModel, string) {
-	sql := "select id,user_name,real_name,pass,phone,avatar from users where user_name=? limit 1"
+	sql := "select id,user_name,real_name,pass,phone,avatar,status from users where user_name=? limit 1"
 	result := u.Raw(sql, userName).First(u)
 	if result.Error == nil {
 		// 账号密码验证成功
@@ -174,12 +176,7 @@ func (u *UsersModel) ShowOneItem(userId float64) (*UsersModel, error) {
 }
 
 // 查询数据之前统计条数
-func (u *UsersModel) counts(userName string) (counts int64) {
-	whereSlice := map[string]interface{}{
-		"user_name": []string{"like", userName},
-	}
-
-	where := (&tool.WhereQuery{}).GenerateWhere(whereSlice)
+func (u *UsersModel) counts(where *tool.WhereQuery) (counts int64) {
 	sql := "SELECT count(*) as counts FROM users WHERE " + where.QuerySql
 	if res := u.Raw(sql, where.QueryParams...).First(&counts); res.Error != nil {
 		variable.ZapLog.Error("UsersModel - counts 查询数据条数出错", zap.Error(res.Error))
@@ -188,12 +185,12 @@ func (u *UsersModel) counts(userName string) (counts int64) {
 }
 
 // Show 查询（根据关键词模糊查询）
-func (u *UsersModel) Show(userName string, limitStart, limitItems int) (counts int64, temp []UsersModel) {
+func (u *UsersModel) Show(values map[string]interface{}, limitStart, limitItems int) (counts int64, temp []*UsersModel) {
 	whereSlice := map[string]interface{}{
-		"user_name": []string{"like", userName},
+		"user_name": []string{"like", values["user_name"].(string)},
 	}
 	where := (&tool.WhereQuery{}).GenerateWhere(whereSlice)
-	if counts = u.counts(userName); counts > 0 {
+	if counts = u.counts(where); counts > 0 {
 		sql := "SELECT * FROM `users` WHERE " + where.QuerySql + " LIMIT ?,?"
 		where.QueryParams = append(where.QueryParams, limitStart, limitItems)
 		if res := u.Raw(sql, where.QueryParams...).Order("updated_at desc").Find(&temp); res.RowsAffected > 0 {
@@ -204,10 +201,10 @@ func (u *UsersModel) Show(userName string, limitStart, limitItems int) (counts i
 }
 
 // Update 更新
-func (u *UsersModel) Update(id float64, userName, pass, realName, phone, email, remark, avatar string) bool {
-	sql := "update users set user_name=?,pass=?,real_name=?,phone=?,email=?,remark=?,avatar=?,updated_at=? WHERE id=?"
-	if u.Exec(sql, userName, pass, realName, phone, email, remark, avatar, time.Now().Format(variable.DateFormat), id).RowsAffected >= 0 {
-		if u.OauthResetToken(id, pass) {
+func (u *UsersModel) Update(values map[string]interface{}) bool {
+	//sql := "update users set user_name=?,pass=?,real_name=?,phone=?,email=?,remark=?,avatar=?,updated_at=? WHERE id=?"
+	if u.Where("id=?", values["id"]).Updates(values).RowsAffected >= 0 {
+		if u.OauthResetToken(values["id"].(float64), values["pass"].(string)) {
 			return true
 		}
 	}

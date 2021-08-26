@@ -17,6 +17,7 @@ type Update struct {
 	Email    string `form:"email" json:"email" binding:"required,email"`
 	Avatar   string `form:"avatar" json:"avatar"`
 	Remark   string `form:"remark" json:"remark"`
+	RoleId   int    `form:"role_id" json:"role_id"`
 }
 
 // CheckParams 验证器语法，参见 Register.go文件，有详细说明

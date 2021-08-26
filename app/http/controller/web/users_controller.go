@@ -3,6 +3,7 @@ package web
 import (
 	"goskeleton/app/global/consts"
 	"goskeleton/app/global/variable"
+	"goskeleton/app/http/controller"
 	"goskeleton/app/model"
 	"goskeleton/app/service/users/curd"
 	userstoken "goskeleton/app/service/users/token"
@@ -62,60 +63,56 @@ func (u *Users) RefreshToken(context *gin.Context) {
 }
 
 // Show 用户查询
-func (u *Users) Show(context *gin.Context) {
-	userName := context.GetString("user_name")
-	page := context.GetFloat64("page")
-	limit := context.GetFloat64("limit")
-	limitStart := (page - 1) * limit
-	counts, showList := model.CreateUserFactory("").Show(userName, int(limitStart), int(limit))
+func (u *Users) Show(c *gin.Context) {
+	page := c.GetFloat64("page")
+	limit := c.GetFloat64("limit")
+	values := controller.GetValues(c, []string{"user_name"})
+	limitStart := (int(page) - 1) * int(limit)
+	counts, showList := model.CreateUserFactory("").Show(values, limitStart, int(limit))
 	if counts > 0 && showList != nil {
-		response.Success(context, consts.CurdStatusOkMsg, gin.H{"counts": counts, "list": showList})
+		roles := model.CreateRoleFactory("").GetRoles("")
+		for _, user := range showList {
+			for _, role := range roles {
+				if user.RoleId == role.Id {
+					user.Role.RoleName = role.RoleName
+				}
+			}
+		}
+		response.Success(c, consts.CurdStatusOkMsg, gin.H{"counts": counts, "list": showList})
 	} else {
-		response.Fail(context, consts.CurdSelectFailCode, consts.CurdSelectFailMsg, "")
+		response.Fail(c, consts.CurdSelectFailCode, consts.CurdSelectFailMsg, "")
 	}
 }
 
 // Store 用户注册/新增
-func (u *Users) Store(context *gin.Context) {
+func (u *Users) Store(c *gin.Context) {
 	//  由于本项目骨架已经将表单验证器的字段(成员)绑定在上下文，因此可以按照 GetString()、GetInt64()、GetFloat64（）等快捷获取需要的数据类型，注意：相关键名规则：  前缀+验证器结构体中的 json 标签
-	// 当然也可以通过gin框架的上下文原始方法获取，例如： context.PostForm("user_name") 获取，这样获取的数据格式为文本，需要自己继续转换
-	userName := context.GetString("user_name")
-	pass := context.GetString("pass")
-	email := context.GetString("email")
-	phone := context.GetString("phone")
-	realName := context.GetString("real_name")
-
-	if errMsg := model.CreateUserFactory("").UserIsExists(0, userName, email, phone); errMsg != "" {
-		response.Fail(context, consts.CurdRegisterFailCode, errMsg, "")
+	// 当然也可以通过gin框架的上下文原始方法获取，例如： c.PostForm("user_name") 获取，这样获取的数据格式为文本，需要自己继续转换
+	values := controller.GetValues(c, []string{"user_name", "pass", "email", "phone", "real_name", "role_id.int"})
+	if errMsg := model.CreateUserFactory("").UserIsExists(0, values["user_name"].(string), values["email"].(string), values["phone"].(string)); errMsg != "" {
+		response.Fail(c, consts.CurdRegisterFailCode, errMsg, "")
 		return
 	}
-	if curd.CreateUserCurdFactory().Store(userName, pass, email, phone, realName) {
-		response.Success(context, consts.CurdStatusOkMsg, "")
+	if curd.CreateUserCurdFactory().Store(values) {
+		response.Success(c, consts.CurdStatusOkMsg, "")
 	} else {
-		response.Fail(context, consts.CurdRegisterFailCode, consts.CurdRegisterFailMsg, "")
+		response.Fail(c, consts.CurdRegisterFailCode, consts.CurdRegisterFailMsg, "")
 	}
 }
 
 // Update 用户更新
-func (u *Users) Update(context *gin.Context) {
-	userId := context.GetFloat64("id")
-	userName := context.GetString("user_name")
-	pass := context.GetString("pass")
-	realName := context.GetString("real_name")
-	phone := context.GetString("phone")
-	email := context.GetString("email")
-	avatar := context.GetString("avatar")
-	remark := context.GetString("remark")
-	if errMsg := model.CreateUserFactory("").UserIsExists(userId, userName, email, phone); errMsg != "" {
-		response.Fail(context, consts.CurdRegisterFailCode, errMsg, "")
+func (u *Users) Update(c *gin.Context) {
+	values := controller.GetValues(c, []string{"id.float64", "user_name", "pass", "real_name", "phone", "email", "avatar", "remark"})
+	if errMsg := model.CreateUserFactory("").UserIsExists(values["id"].(float64), values["user_name"].(string), values["email"].(string), values["phone"].(string)); errMsg != "" {
+		response.Fail(c, consts.CurdRegisterFailCode, errMsg, "")
 		return
 	}
 	//注意：这里没有实现权限控制逻辑，例如：超级管理管理员可以更新全部用户数据，普通用户只能修改自己的数据。目前只是验证了token有效、合法之后就可以进行后续操作
 	// 实际使用请根据真是业务实现权限控制逻辑、再进行数据库操作
-	if curd.CreateUserCurdFactory().Update(userId, userName, pass, realName, phone, email, remark, avatar) {
-		response.Success(context, consts.CurdStatusOkMsg, "")
+	if curd.CreateUserCurdFactory().Update(values) {
+		response.Success(c, consts.CurdStatusOkMsg, "")
 	} else {
-		response.Fail(context, consts.CurdUpdateFailCode, consts.CurdUpdateFailMsg, "")
+		response.Fail(c, consts.CurdUpdateFailCode, consts.CurdUpdateFailMsg, "")
 	}
 
 }

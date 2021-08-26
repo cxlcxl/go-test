@@ -103,6 +103,15 @@ func InitWebRouter() *gin.Engine {
 				// 删除
 				users.POST("delete", validatorFactory.Create("UsersDestroy"))
 			}
+
+			role := backend.Group("role/")
+			{
+				role.GET("index", (&web.Roles{}).Show)
+				role.POST("create", validatorFactory.Create("RolesStore"))
+				role.POST("edit", validatorFactory.Create("RolesUpdate"))
+				role.POST("delete", (&web.Roles{}).Destroy)
+			}
+
 			report := backend.Group("report/")
 			{
 				report.GET("/info", (&web.Report{}).GetReport)

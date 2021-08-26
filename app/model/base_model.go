@@ -10,14 +10,11 @@ import (
 )
 
 type BaseModel struct {
-	*gorm.DB   `gorm:"-" json:"-"`
-	Id         int64  `gorm:"primarykey" json:"id"`
-	CreateTime string `json:"create_time"`
-	UpdateTime string `json:"update_time"`
+	*gorm.DB `gorm:"-" json:"-"`
 }
 
 type BaseColumns struct {
-	ID        int64          `gorm:"primarykey" json:"id"`
+	Id        int64          `gorm:"primarykey" json:"id"`
 	CreatedAt tool.LocalTime `json:"created_at"`
 	UpdatedAt tool.LocalTime `json:"updated_at"`
 }

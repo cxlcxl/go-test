@@ -18,6 +18,7 @@ type Store struct {
 	RealName string `form:"real_name" json:"real_name" binding:"max=30"`
 	Remark   string `form:"remark" json:"remark"`
 	Avatar   string `json:"avatar"`
+	RoleId   int    `form:"role_id" json:"role_id" binding:"required"`
 }
 
 // 特别注意: 表单参数验证器结构体的函数，绝对不能绑定在指针上
