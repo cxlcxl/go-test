@@ -146,7 +146,7 @@ func (u *UsersModel) OauthCheckTokenIsOk(userId int64, token string) bool {
 				}
 			}
 		}
-		//  凡是查询类记得释放记录集
+		// 凡是查询类记得释放记录集
 		_ = rows.Close()
 	}
 	return false

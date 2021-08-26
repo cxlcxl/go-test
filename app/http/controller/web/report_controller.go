@@ -9,7 +9,7 @@ import (
 type Report struct{}
 
 func (r *Report) GetReport(c *gin.Context) {
-	response.Success(c, "请求成功", map[string]interface{}{
+	response.Success(c, "请求成功", gin.H{
 		"maps": map[string]string{
 			"views":   "展示",
 			"clicks":  "点击",
