@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-//创建 casbin Enforcer(执行器)
+// InitCasbinEnforcer 创建 casbin Enforcer(执行器)
 func InitCasbinEnforcer() (*casbin.SyncedEnforcer, error) {
 	var tmpDbConn *gorm.DB
 	var Enforcer *casbin.SyncedEnforcer

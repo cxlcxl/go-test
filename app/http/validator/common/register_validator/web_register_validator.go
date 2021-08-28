@@ -15,18 +15,19 @@ func WebRegisterValidator() {
 	containers := container.CreateContainersFactory()
 	// 验证器注册 map
 	validators := map[string]interface{}{
-		"UsersLogin":       users.Login{},
-		"UsersLogout":      users.Logout{},
-		"RefreshToken":     users.RefreshToken{},
-		"UsersShow":        users.Show{},
-		"UsersStore":       users.Store{},
-		"UsersUpdate":      users.Update{},
-		"UsersDestroy":     users.Destroy{},
-		"NewsStore":        news.Store{},
-		"RolesStore":       roles.Store{},
-		"RolesUpdate":      roles.Update{},
-		"UploadFiles":      upload_files.UpFiles{}, // 文件上传
-		"WebsocketConnect": websocket.Connect{},
+		"UsersLogin":           users.Login{},
+		"UsersLogout":          users.Logout{},
+		"RefreshToken":         users.RefreshToken{},
+		"UsersShow":            users.Show{},
+		"UsersStore":           users.Store{},
+		"UsersUpdate":          users.Update{},
+		"UsersDestroy":         users.Destroy{},
+		"NewsStore":            news.Store{},
+		"RolesStore":           roles.Store{},
+		"RolesUpdate":          roles.Update{},
+		"PermissionRoleUpdate": roles.PermissionUpdate{},
+		"UploadFiles":          upload_files.UpFiles{}, // 文件上传
+		"WebsocketConnect":     websocket.Connect{},
 	}
 
 	for validator, forStruct := range validators {

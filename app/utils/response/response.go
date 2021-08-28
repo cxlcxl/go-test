@@ -51,7 +51,7 @@ func ErrorTokenAuthFail(c *gin.Context) {
 	c.Abort()
 }
 
-// casbin 鉴权失败，返回 405 方法不允许访问
+// ErrorCasbinAuthFail 鉴权失败，返回 405 方法不允许访问
 func ErrorCasbinAuthFail(c *gin.Context, msg interface{}) {
 	ReturnJson(c, http.StatusMethodNotAllowed, http.StatusMethodNotAllowed, my_errors.ErrorsCasbinNoAuthorization, msg)
 	c.Abort()

@@ -70,7 +70,7 @@ func (u *Users) Show(c *gin.Context) {
 	limitStart := (int(page) - 1) * int(limit)
 	counts, showList := model.CreateUserFactory("").Show(values, limitStart, int(limit))
 	if counts > 0 && showList != nil {
-		roles := model.CreateRoleFactory("").GetRoles("")
+		roles := model.CreateRoleFactory().GetRoles("")
 		for _, user := range showList {
 			for _, role := range roles {
 				if user.RoleId == role.Id {

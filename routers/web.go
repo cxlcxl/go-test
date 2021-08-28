@@ -93,7 +93,6 @@ func InitWebRouter() *gin.Engine {
 				users.POST("logout", validatorFactory.Create("UsersLogout"))
 				// 刷新token，当token过期，用旧token换取新token
 				users.POST("refreshtoken", validatorFactory.Create("RefreshToken"))
-
 				// 查询 ，这里的验证器直接从容器获取，是因为程序启动时，将验证器注册在了容器，具体代码位置：App\Http\Validator\Web\Users\xxx
 				users.GET("index", validatorFactory.Create("UsersShow"))
 				// 新增
@@ -110,6 +109,11 @@ func InitWebRouter() *gin.Engine {
 				role.POST("create", validatorFactory.Create("RolesStore"))
 				role.POST("edit", validatorFactory.Create("RolesUpdate"))
 				role.POST("delete", (&web.Roles{}).Destroy)
+
+				permission := role.Group("permission/")
+				{
+					permission.POST("edit", validatorFactory.Create("PermissionRoleUpdate"))
+				}
 			}
 
 			report := backend.Group("report/")

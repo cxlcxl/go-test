@@ -4,8 +4,8 @@ type ReportThirdData struct {
 	BaseModel `json:"-"`
 }
 
-func ReportThirdDataDb(sqlType string) *ReportThirdData {
-	return &ReportThirdData{BaseModel{DB: UseDbConn(sqlType)}}
+func ReportThirdDataDb() *ReportThirdData {
+	return &ReportThirdData{BaseModel{DB: UseDbConn("")}}
 }
 
 func (r *ReportThirdData) TableName() string {

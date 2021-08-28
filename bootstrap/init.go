@@ -112,6 +112,6 @@ func init() {
 
 	// 初始化验证器语言
 	if err := validator_web.LoadValidatorLocal(); err != nil {
-		log.Println(err)
+		log.Fatal(err.Error())
 	}
 }
