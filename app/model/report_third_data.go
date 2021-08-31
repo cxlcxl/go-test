@@ -4,7 +4,7 @@ import (
 	"goskeleton/app/model/tool"
 )
 
-func ReportThirdDataDb() *ReportThirdData {
+func ReportThirdDataModel() *ReportThirdData {
 	return &ReportThirdData{BaseModel: BaseModel{DB: CreateMysqlDB("Data")}}
 }
 
@@ -32,15 +32,11 @@ func (r *ReportThirdData) TableName() string {
 	return "report_third_data"
 }
 
-func (r *ReportThirdData) Show(where *tool.WhereQuery, limitStart, limit int) (counts int, data []ReportThirdData) {
-	if counts = r.counts(where); counts > 0 {
-		sql := "SELECT * FROM report_third_data WHERE " + where.QuerySql + " LIMIT ?,?"
-		where.QueryParams = append(where.QueryParams, limitStart, limit)
-		r.Raw(sql, where.QueryParams...).Find(&data)
-		return counts, data
-	} else {
-		return 0, nil
-	}
+func (r *ReportThirdData) Show(where *tool.WhereQuery) (data []ReportThirdData) {
+	sql := "SELECT days,SUM(third_views) AS third_views,SUM(third_clicks) AS third_clicks,SUM(ad_income) AS ad_income,app_key,ads_id,ad_type " +
+		"FROM report_third_data WHERE " + where.QuerySql + " GROUP BY days"
+	r.Raw(sql, where.QueryParams...).Find(&data)
+	return data
 }
 
 func (r *ReportThirdData) counts(where *tool.WhereQuery) (counts int) {

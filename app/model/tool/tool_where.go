@@ -57,8 +57,8 @@ func (w *WhereQuery) GenerateWhere(wheres map[string]interface{}) *WhereQuery {
 
 // mapWhere
 func (w *WhereQuery) mapWhere(field string, whereSlice []string) {
-	if len(whereSlice) != 2 {
-		panic("sub where args length must be 2")
+	if len(whereSlice) != 2 && len(whereSlice) != 3 {
+		panic("WHERE 子条件组装有误")
 	}
 	if w.Filter && len(whereSlice[1]) == 0 {
 		return
@@ -89,6 +89,9 @@ func (w *WhereQuery) mapWhere(field string, whereSlice []string) {
 	case "in":
 		w.Queries = append(w.Queries, fmt.Sprintf("`%s` IN (?)", field))
 		w.QueryParams = append(w.QueryParams, "'"+strings.Join(strings.Split(whereSlice[1], ","), "','")+"'")
+	case "between":
+		w.Queries = append(w.Queries, fmt.Sprintf("`%s` BETWEEN ? AND ?", field))
+		w.QueryParams = append(w.QueryParams, whereSlice[1], whereSlice[2])
 	default:
 		panic("unknown key type: " + whereSlice[0])
 	}

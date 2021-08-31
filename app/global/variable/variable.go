@@ -45,8 +45,9 @@ var (
 	//casbin 全局操作指针
 	Enforcer *casbin.SyncedEnforcer
 
-	//  用户自行定义其他全局变量 ↓
-
+	// 用户自行定义其他全局变量 ↓
+	PageKey   = "page"  //  分页
+	PageLimit = "limit" //  分页
 )
 
 func init() {

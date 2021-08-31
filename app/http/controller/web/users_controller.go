@@ -64,11 +64,9 @@ func (u *Users) RefreshToken(context *gin.Context) {
 
 // Show 用户查询
 func (u *Users) Show(c *gin.Context) {
-	page := c.GetFloat64("page")
-	limit := c.GetFloat64("limit")
 	values := controller.GetValues(c, []string{"user_name"})
-	limitStart := (int(page) - 1) * int(limit)
-	counts, showList := model.CreateUserFactory("").Show(values, limitStart, int(limit))
+	limitStart, limit := controller.GetPage(c)
+	counts, showList := model.CreateUserFactory("").Show(values, limitStart, limit)
 	if counts > 0 && showList != nil {
 		roles := model.CreateRoleFactory().GetRoles("")
 		for _, user := range showList {

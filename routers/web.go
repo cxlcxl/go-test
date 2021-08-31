@@ -131,6 +131,17 @@ func InitWebRouter() *gin.Engine {
 			{
 				uploadFiles.POST("files", validatorFactory.Create("UploadFiles"))
 			}
+
+			// 系统配置路由
+			conf := backend.Group("conf/")
+			{
+				conf.GET("info", (&web.Conf{}).ConfInfo)
+				conf.GET("index", (&web.Conf{}).Show)
+				conf.POST("create", (&web.Conf{}).Store)
+				conf.POST("edit", (&web.Conf{}).Update)
+				conf.POST("delete", (&web.Conf{}).Destroy)
+			}
+
 		}
 	}
 	return router
