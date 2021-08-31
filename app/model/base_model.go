@@ -2,10 +2,12 @@ package model
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"goskeleton/app/global/my_errors"
 	"goskeleton/app/global/variable"
 	"goskeleton/app/model/tool"
+	"goskeleton/app/utils/gorm_v2"
 	"strings"
 )
 
@@ -45,4 +47,19 @@ func UseDbConn(sqlType string) *gorm.DB {
 		variable.ZapLog.Error(my_errors.ErrorsDbDriverNotExists + sqlType)
 	}
 	return db
+}
+
+// CreateMysqlDB 创建一个连接
+func CreateMysqlDB(database string) *gorm.DB {
+	sqlType := "Mysql"
+	if variable.GormDbMysqlData == nil {
+		// 首字母大写
+		database = strings.ToUpper(database[0:1]) + strings.ToLower(database[1:])
+		var err error
+		variable.GormDbMysqlData, err = gorm_v2.GetSqlDriver(sqlType, database, 1)
+		if err != nil {
+			variable.ZapLog.Error(my_errors.ErrorsDialectorDbInitFail+sqlType, zap.Error(err))
+		}
+	}
+	return variable.GormDbMysqlData
 }

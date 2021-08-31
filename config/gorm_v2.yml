@@ -21,7 +21,7 @@ Gormv2: # 只针对 gorm  操作数据库有效
       Read:
         Host: "127.0.0.1"
         DataBase: "go_site"
-        Port: 3306                        #注意，非3306，请自行调整
+        Port: 3306
         Prefix: ""
         User: "root"
         Pass: "root"
@@ -42,12 +42,12 @@ Gormv2: # 只针对 gorm  操作数据库有效
         SetMaxOpenConns: 128
         SetConnMaxLifetime: 60
       Read:
-        Host: "127.0.0.1"
-        DataBase: "go_site"
-        Port: 3306             #注意，非3306，请自行调整
+        Host: "111.230.169.231"
+        DataBase: "mobgi_data_new"
+        Port: 21077
         Prefix: ""
         User: "root"
-        Pass: "root"
+        Pass: "XqfX29pXso"
         Charset: "utf8mb4"
         SetMaxIdleConns: 10
         SetMaxOpenConns: 128

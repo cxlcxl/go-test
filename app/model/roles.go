@@ -18,7 +18,7 @@ type RoleModel struct {
 	RoleName  string `gorm:"column:role_name" json:"role_name"`
 	Des       string `json:"des"`
 	*BaseColumns
-	Permissions []RolePermission
+	//Permissions []RolePermission
 }
 
 func (r *RoleModel) TableName() string {

@@ -151,6 +151,9 @@ func (w *WhereQuery) stringWhere(field, val string) {
 		w.Queries = append(w.Queries, fmt.Sprintf("`%s` IS NULL", field))
 	} else if strings.ToLower(val) == "not null" {
 		w.Queries = append(w.Queries, fmt.Sprintf("`%s` IS NOT NULL", field))
+	} else {
+		w.Queries = append(w.Queries, fmt.Sprintf("`%s`=?", field))
+		w.QueryParams = append(w.QueryParams, val)
 	}
 	return
 }

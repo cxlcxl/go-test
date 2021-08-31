@@ -21,28 +21,27 @@ import (
 func GetOneMysqlClient() (*gorm.DB, error) {
 	sqlType := "Mysql"
 	readDbIsOpen := variable.ConfigGormv2Yml.GetInt("Gormv2." + sqlType + ".IsOpenReadDb")
-	return GetSqlDriver(sqlType, readDbIsOpen)
+	return GetSqlDriver(sqlType, "Default", readDbIsOpen)
 }
 
 // GetOneSqlserverClient 获取一个 sqlserver 客户端
 func GetOneSqlserverClient() (*gorm.DB, error) {
 	sqlType := "SqlServer"
 	readDbIsOpen := variable.ConfigGormv2Yml.GetInt("Gormv2." + sqlType + ".IsOpenReadDb")
-	return GetSqlDriver(sqlType, readDbIsOpen)
+	return GetSqlDriver(sqlType, "", readDbIsOpen)
 }
 
 // GetOnePostgreSqlClient 获取一个 postgresql 客户端
 func GetOnePostgreSqlClient() (*gorm.DB, error) {
 	sqlType := "Postgresql"
 	readDbIsOpen := variable.ConfigGormv2Yml.GetInt("Gormv2." + sqlType + ".IsOpenReadDb")
-	return GetSqlDriver(sqlType, readDbIsOpen)
+	return GetSqlDriver(sqlType, "", readDbIsOpen)
 }
 
 // GetSqlDriver 获取数据库驱动, 可以通过options 动态参数连接任意多个数据库
-func GetSqlDriver(sqlType string, readDbIsOpen int, dbConf ...ConfigParams) (*gorm.DB, error) {
-
+func GetSqlDriver(sqlType, database string, readDbIsOpen int, dbConf ...ConfigParams) (*gorm.DB, error) {
 	var dbDialector gorm.Dialector
-	if val, err := getDbDialector(sqlType, "Write", dbConf...); err != nil {
+	if val, err := getDbDialector(sqlType, database, "Write", dbConf...); err != nil {
 		variable.ZapLog.Error(my_errors.ErrorsDialectorDbInitFail+sqlType, zap.Error(err))
 	} else {
 		dbDialector = val
@@ -57,10 +56,14 @@ func GetSqlDriver(sqlType string, readDbIsOpen int, dbConf ...ConfigParams) (*go
 		return nil, err
 	}
 
+	connect := sqlType
+	if len(database) > 0 {
+		connect = sqlType + "." + database
+	}
 	// 如果开启了读写分离，配置读数据库（resource、read、replicas）
 	// 读写分离配置只
 	if readDbIsOpen == 1 {
-		if val, err := getDbDialector(sqlType, "Read", dbConf...); err != nil {
+		if val, err := getDbDialector(sqlType, database, "Read", dbConf...); err != nil {
 			variable.ZapLog.Error(my_errors.ErrorsDialectorDbInitFail+sqlType, zap.Error(err))
 		} else {
 			dbDialector = val
@@ -70,9 +73,9 @@ func GetSqlDriver(sqlType string, readDbIsOpen int, dbConf ...ConfigParams) (*go
 			Policy:   dbresolver.RandomPolicy{},     // sources/replicas 负载均衡策略适用于
 		}
 		err = gormDb.Use(dbresolver.Register(resolverConf).SetConnMaxIdleTime(time.Second * 30).
-			SetConnMaxLifetime(variable.ConfigGormv2Yml.GetDuration("Gormv2."+sqlType+".Read.SetConnMaxLifetime") * time.Second).
-			SetMaxIdleConns(variable.ConfigGormv2Yml.GetInt("Gormv2." + sqlType + ".Read.SetMaxIdleConns")).
-			SetMaxOpenConns(variable.ConfigGormv2Yml.GetInt("Gormv2." + sqlType + ".Read.SetMaxOpenConns")))
+			SetConnMaxLifetime(variable.ConfigGormv2Yml.GetDuration("Gormv2."+connect+".Read.SetConnMaxLifetime") * time.Second).
+			SetMaxIdleConns(variable.ConfigGormv2Yml.GetInt("Gormv2." + connect + ".Read.SetMaxIdleConns")).
+			SetMaxOpenConns(variable.ConfigGormv2Yml.GetInt("Gormv2." + connect + ".Read.SetMaxOpenConns")))
 		if err != nil {
 			return nil, err
 		}
@@ -89,17 +92,17 @@ func GetSqlDriver(sqlType string, readDbIsOpen int, dbConf ...ConfigParams) (*go
 		return nil, err
 	} else {
 		rawDb.SetConnMaxIdleTime(time.Second * 30)
-		rawDb.SetConnMaxLifetime(variable.ConfigGormv2Yml.GetDuration("Gormv2."+sqlType+".Write.SetConnMaxLifetime") * time.Second)
-		rawDb.SetMaxIdleConns(variable.ConfigGormv2Yml.GetInt("Gormv2." + sqlType + ".Write.SetMaxIdleConns"))
-		rawDb.SetMaxOpenConns(variable.ConfigGormv2Yml.GetInt("Gormv2." + sqlType + ".Write.SetMaxOpenConns"))
+		rawDb.SetConnMaxLifetime(variable.ConfigGormv2Yml.GetDuration("Gormv2."+connect+".Write.SetConnMaxLifetime") * time.Second)
+		rawDb.SetMaxIdleConns(variable.ConfigGormv2Yml.GetInt("Gormv2." + connect + ".Write.SetMaxIdleConns"))
+		rawDb.SetMaxOpenConns(variable.ConfigGormv2Yml.GetInt("Gormv2." + connect + ".Write.SetMaxOpenConns"))
 		return gormDb, nil
 	}
 }
 
 // 获取一个数据库方言(Dialector),通俗的说就是根据不同的连接参数，获取具体的一类数据库的连接指针
-func getDbDialector(sqlType, readWrite string, dbConf ...ConfigParams) (gorm.Dialector, error) {
+func getDbDialector(sqlType, database, readWrite string, dbConf ...ConfigParams) (gorm.Dialector, error) {
 	var dbDialector gorm.Dialector
-	dsn := getDsn(sqlType, readWrite, dbConf...)
+	dsn := getDsn(sqlType, database, readWrite, dbConf...)
 	switch strings.ToLower(sqlType) {
 	case "mysql":
 		dbDialector = mysql.Open(dsn)
@@ -114,13 +117,17 @@ func getDbDialector(sqlType, readWrite string, dbConf ...ConfigParams) (gorm.Dia
 }
 
 //  根据配置参数生成数据库驱动 dsn
-func getDsn(sqlType, readWrite string, dbConf ...ConfigParams) string {
-	Host := variable.ConfigGormv2Yml.GetString("Gormv2." + sqlType + "." + readWrite + ".Host")
-	DataBase := variable.ConfigGormv2Yml.GetString("Gormv2." + sqlType + "." + readWrite + ".DataBase")
-	Port := variable.ConfigGormv2Yml.GetInt("Gormv2." + sqlType + "." + readWrite + ".Port")
-	User := variable.ConfigGormv2Yml.GetString("Gormv2." + sqlType + "." + readWrite + ".User")
-	Pass := variable.ConfigGormv2Yml.GetString("Gormv2." + sqlType + "." + readWrite + ".Pass")
-	Charset := variable.ConfigGormv2Yml.GetString("Gormv2." + sqlType + "." + readWrite + ".Charset")
+func getDsn(sqlType, database, readWrite string, dbConf ...ConfigParams) string {
+	connect := sqlType
+	if len(database) > 0 {
+		connect = sqlType + "." + database
+	}
+	Host := variable.ConfigGormv2Yml.GetString("Gormv2." + connect + "." + readWrite + ".Host")
+	DataBase := variable.ConfigGormv2Yml.GetString("Gormv2." + connect + "." + readWrite + ".DataBase")
+	Port := variable.ConfigGormv2Yml.GetInt("Gormv2." + connect + "." + readWrite + ".Port")
+	User := variable.ConfigGormv2Yml.GetString("Gormv2." + connect + "." + readWrite + ".User")
+	Pass := variable.ConfigGormv2Yml.GetString("Gormv2." + connect + "." + readWrite + ".Pass")
+	Charset := variable.ConfigGormv2Yml.GetString("Gormv2." + connect + "." + readWrite + ".Charset")
 
 	if len(dbConf) > 0 {
 		if strings.ToLower(readWrite) == "write" {

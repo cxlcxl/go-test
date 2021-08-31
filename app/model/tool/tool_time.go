@@ -7,8 +7,14 @@ import (
 	"time"
 )
 
+// LocalTime 时间格式化格式：2005-01-02 15:04:05
 type LocalTime struct {
 	time.Time
+}
+
+// LocalDate 时间格式化格式：2005-01-02
+type LocalDate struct {
+	time.Time // 2005-01-02
 }
 
 func (t LocalTime) MarshalJSON() ([]byte, error) {
@@ -28,6 +34,28 @@ func (t *LocalTime) Scan(v interface{}) error {
 	value, ok := v.(time.Time)
 	if ok {
 		*t = LocalTime{Time: value}
+		return nil
+	}
+	return fmt.Errorf("can not convert %v to timestamp", v)
+}
+
+func (l LocalDate) MarshalJSON() ([]byte, error) {
+	d := l.Format("2006-01-02")
+	return []byte(`"` + d + `"`), nil
+}
+
+func (l LocalDate) Value() (driver.Value, error) {
+	var zeroTime time.Time
+	if l.Time.UnixNano() == zeroTime.UnixNano() {
+		return nil, nil
+	}
+	return l.Time, nil
+}
+
+func (l *LocalDate) Scan(v interface{}) error {
+	value, ok := v.(time.Time)
+	if ok {
+		*l = LocalDate{Time: value}
 		return nil
 	}
 	return fmt.Errorf("can not convert %v to timestamp", v)
