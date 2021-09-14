@@ -2,9 +2,9 @@ package users
 
 import (
 	"goskeleton/app/http/controller/web"
+	"goskeleton/app/http/validator"
 	common_data_type "goskeleton/app/http/validator/common/data_type"
 	"goskeleton/app/http/validator/core/data_transfer"
-	validator_web "goskeleton/app/http/validator/web"
 	"goskeleton/app/utils/response"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +20,7 @@ type Show struct {
 func (s Show) CheckParams(c *gin.Context) {
 	//1.基本的验证规则没有通过
 	if err := c.ShouldBind(&s); err != nil {
-		response.ErrorParam(c, validator_web.Translate(err))
+		response.ErrorParam(c, validator.Translate(err))
 		return
 	}
 

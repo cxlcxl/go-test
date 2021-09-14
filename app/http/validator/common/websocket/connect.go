@@ -5,8 +5,8 @@ import (
 	"goskeleton/app/global/consts"
 	"goskeleton/app/global/variable"
 	controllerWs "goskeleton/app/http/controller/websocket"
+	"goskeleton/app/http/validator"
 	"goskeleton/app/http/validator/core/data_transfer"
-	validator_web "goskeleton/app/http/validator/web"
 	"goskeleton/app/utils/response"
 )
 
@@ -25,7 +25,7 @@ func (c Connect) CheckParams(context *gin.Context) {
 	}
 	//2.基本的验证规则没有通过
 	if err := context.ShouldBind(&c); err != nil {
-		response.ErrorParam(context, validator_web.Translate(err))
+		response.ErrorParam(context, validator.Translate(err))
 		return
 	}
 	extraAddBindDataContext := data_transfer.DataAddContext(c, "", context)

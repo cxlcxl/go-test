@@ -16,14 +16,14 @@ func (n *News) Store(context *gin.Context) {
 	title := context.GetString("title")
 	des := context.GetString("des")
 	content := context.GetString("content")
-	if model.CreateNewFactory("").Store(title, des, content, userId) {
+	if model.NewsDB().Store(title, des, content, userId) {
 		response.Success(context, consts.CurdStatusOkMsg, "")
 	} else {
 		response.Fail(context, consts.CurdCreatFailCode, consts.CurdCreatFailMsg, "")
 	}
 }
 
-// Test
+// Test ...
 func (n *News) Test(context *gin.Context) {
 	response.Success(context, "调用成功", "")
 }

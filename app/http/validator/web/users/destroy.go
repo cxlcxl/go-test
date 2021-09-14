@@ -3,8 +3,8 @@ package users
 import (
 	"github.com/gin-gonic/gin"
 	"goskeleton/app/http/controller/web"
+	"goskeleton/app/http/validator"
 	"goskeleton/app/http/validator/core/data_transfer"
-	validator_web "goskeleton/app/http/validator/web"
 	"goskeleton/app/utils/response"
 )
 
@@ -17,7 +17,7 @@ type Destroy struct {
 
 func (d Destroy) CheckParams(context *gin.Context) {
 	if err := context.ShouldBind(&d); err != nil {
-		response.ErrorParam(context, validator_web.Translate(err))
+		response.ErrorParam(context, validator.Translate(err))
 		return
 	}
 

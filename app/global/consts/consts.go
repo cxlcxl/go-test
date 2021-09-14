@@ -73,8 +73,15 @@ const (
 	CaptchaCheckFailCode int    = -400355
 	CaptchaCheckFailMsg  string = "验证码校验失败"
 
+	// JsonMarshalFailed 表单验证json序列化操作
+	JsonMarshalFailed = "JSON 序列化失败"
 	// PhoneRule 手机号码正则
-	PhoneRule string = "^(1)[0-9]{10}$"
+	PhoneRule  = "^(1)[0-9]{10}$"
+	PhoneError = "手机号码格式有误"
 	// EmailRule 邮箱正则
-	EmailRule string = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(.[a-zA-Z0-9_-]+)+$"
+	EmailRule  = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(.[a-zA-Z0-9_-]+)+$"
+	EmailError = "邮箱格式有误"
+	// PassRule 密码正则
+	PassRule  = "^[a-zA-Z]{1}[a-zA-Z0-9.@#$%&*!]{5,19}$"
+	PassError = "密码限字母开头 6-20 位的字符"
 )

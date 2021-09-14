@@ -2,9 +2,9 @@ package home
 
 import (
 	"goskeleton/app/http/controller/api"
+	"goskeleton/app/http/validator"
 	common_data_type "goskeleton/app/http/validator/common/data_type"
 	"goskeleton/app/http/validator/core/data_transfer"
-	validator_web "goskeleton/app/http/validator/web"
 	"goskeleton/app/utils/response"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +20,7 @@ type News struct {
 func (n News) CheckParams(context *gin.Context) {
 	//1.先按照验证器提供的基本语法，基本可以校验90%以上的不合格参数
 	if err := context.ShouldBind(&n); err != nil {
-		response.ErrorParam(context, validator_web.Translate(err))
+		response.ErrorParam(context, validator.Translate(err))
 		return
 	}
 

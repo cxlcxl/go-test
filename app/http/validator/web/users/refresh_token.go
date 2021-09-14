@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"goskeleton/app/global/consts"
 	"goskeleton/app/http/controller/web"
-	validator_web "goskeleton/app/http/validator/web"
+	"goskeleton/app/http/validator"
 	"goskeleton/app/utils/response"
 	"strings"
 )
@@ -19,7 +19,7 @@ func (r RefreshToken) CheckParams(context *gin.Context) {
 
 	//1.基本的验证规则没有通过
 	if err := context.ShouldBindHeader(&r); err != nil {
-		response.ErrorParam(context, validator_web.Translate(err))
+		response.ErrorParam(context, validator.Translate(err))
 		return
 	}
 	token := strings.Split(r.Authorization, " ")

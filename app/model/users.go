@@ -56,8 +56,8 @@ func (u *UsersModel) Store(values map[string]interface{}) bool {
 
 // Login 用户登录
 func (u *UsersModel) Login(userName, pass, ip string) (*UsersModel, string) {
-	sql := "select id,user_name,real_name,pass,phone,avatar,status from users where user_name=? limit 1"
-	result := u.Raw(sql, userName).First(u)
+	sql := "select id,user_name,real_name,pass,phone,avatar,status,email from users where user_name=? or email=? limit 1"
+	result := u.Raw(sql, userName, userName).First(u)
 	if result.Error == nil {
 		// 账号密码验证成功
 		if u.Status != 1 {
@@ -261,4 +261,17 @@ func (u *UsersModel) UserIsExists(userId float64, userName, email, phone string)
 	}
 
 	return ""
+}
+
+// CheckPass 检查密码
+func (u *UsersModel) CheckPass(id float64, pass string) bool {
+	originalPass := ""
+	u.Raw("SELECT pass FROM users WHERE id = ? LIMIT 1", id).First(&originalPass)
+	return pass == originalPass
+}
+
+// ResetPass 检查密码
+func (u *UsersModel) ResetPass(id float64, pass string) bool {
+	affect := u.Exec("UPDATE users SET pass = ? WHERE id = ? LIMIT 1", pass, id).RowsAffected
+	return affect > 0
 }

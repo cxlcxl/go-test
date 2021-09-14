@@ -21,12 +21,12 @@ func InitWebRouter() *gin.Engine {
 	var router *gin.Engine
 	// 非调试模式（生产模式） 日志写到日志文件
 	if variable.ConfigYml.GetBool("AppDebug") == false {
-		//1.将日志写入日志文件
+		// 1.将日志写入日志文件
 		gin.DisableConsoleColor()
 		f, _ := os.Create(variable.BasePath + variable.ConfigYml.GetString("Logs.GinLogName"))
 		gin.DefaultWriter = io.MultiWriter(f)
 		// 2.如果是有nginx前置做代理，基本不需要gin框架记录访问日志，开启下面一行代码，屏蔽上面的三行代码，性能提升 5%
-		//gin.SetMode(gin.ReleaseMode)
+		// gin.SetMode(gin.ReleaseMode)
 
 		router = gin.Default()
 	} else {
@@ -35,7 +35,7 @@ func InitWebRouter() *gin.Engine {
 		pprof.Register(router)
 	}
 
-	//根据配置进行设置跨域
+	// 根据配置进行设置跨域
 	if variable.ConfigYml.GetBool("HttpServer.AllowCrossDomain") {
 		router.Use(cors.Next())
 	}
@@ -48,7 +48,7 @@ func InitWebRouter() *gin.Engine {
 		(&web.News{}).Test(c)
 	})
 
-	//处理静态资源（不建议gin框架处理静态资源，参见 public/readme.md 说明 ）
+	// 处理静态资源（不建议gin框架处理静态资源，参见 public/readme.md 说明 ）
 	router.Static("/public", "./public")             //  定义静态资源路由与实际目录映射关系
 	router.StaticFS("/dir", http.Dir("./public"))    // 将public目录内的文件列举展示
 	router.StaticFile("/abcd", "./public/readme.md") // 可以根据文件名绑定需要返回的文件名
@@ -61,13 +61,13 @@ func InitWebRouter() *gin.Engine {
 		verifyCode.GET("/:captchaId", (&chaptcha.Captcha{}).GetImg)           // 获取图像地址
 		verifyCode.GET("/:captchaId/:value", (&chaptcha.Captcha{}).CheckCode) // 校验验证码
 	}
-	//  创建一个后端接口路由组
+	// 创建一个后端接口路由组
 	backend := router.Group("/admin/")
 	{
 		// 创建一个websocket,如果ws需要账号密码登录才能使用，就写在需要鉴权的分组，这里暂定是开放式的，不需要严格鉴权，我们简单验证一下token值
 		backend.GET("ws", validatorFactory.Create("WebsocketConnect"))
 
-		//  【不需要token】中间件验证的路由  用户注册、登录
+		// 【不需要token】中间件验证的路由  用户注册、登录
 		noAuth := backend.Group("user/")
 		{
 			// 关于路由的第二个参数用法说明
@@ -80,26 +80,26 @@ func InitWebRouter() *gin.Engine {
 
 			// 如果加载了验证码中间件，那么就需要提交验证码才可以登陆（本质上就是给登陆接口增加了2个参数：验证码id提交时的键：captcha_id 和 验证码值提交时的键 captcha_value，具体参见配置文件）
 			//noAuth.Use(authorization.CheckCaptchaAuth()).POST("login", validatorFactory.Create(consts.ValidatorPrefix+"UsersLogin"))
-
 		}
 
 		// 【需要token+Casbin】中间件验证的路由
 		backend.Use(authorization.CheckTokenAuth())
 		{
+			// 文件上传公共路由
+			uploadFiles := backend.Group("upload/")
+			{
+				uploadFiles.POST("files", validatorFactory.Create("UploadFiles"))
+			}
+
 			// 用户组路由
 			users := backend.Group("user/")
 			{
 				users.GET("info", (&web.Users{}).UserInfo)
 				users.POST("logout", validatorFactory.Create("UsersLogout"))
-				// 刷新token，当token过期，用旧token换取新token
 				users.POST("refreshtoken", validatorFactory.Create("RefreshToken"))
-				// 查询 ，这里的验证器直接从容器获取，是因为程序启动时，将验证器注册在了容器，具体代码位置：App\Http\Validator\Web\Users\xxx
 				users.GET("index", validatorFactory.Create("UsersShow"))
-				// 新增
 				users.POST("create", validatorFactory.Create("UsersStore"))
-				// 更新
 				users.POST("edit", validatorFactory.Create("UsersUpdate"))
-				// 删除
 				users.POST("delete", validatorFactory.Create("UsersDestroy"))
 			}
 
@@ -123,15 +123,8 @@ func InitWebRouter() *gin.Engine {
 			// 用户组路由
 			news := backend.Group("news/")
 			{
-				// 新增
 				news.POST("create", validatorFactory.Create("NewsStore"))
 			}
-			//文件上传公共路由
-			uploadFiles := backend.Group("upload/")
-			{
-				uploadFiles.POST("files", validatorFactory.Create("UploadFiles"))
-			}
-
 			// 系统配置路由
 			conf := backend.Group("conf/")
 			{

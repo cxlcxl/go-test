@@ -1,4 +1,4 @@
-package web
+package api
 
 import (
 	"goskeleton/app/global/consts"
@@ -7,6 +7,7 @@ import (
 	"goskeleton/app/model"
 	"goskeleton/app/service/users/curd"
 	userstoken "goskeleton/app/service/users/token"
+	"goskeleton/app/utils/md5_encrypt"
 	"goskeleton/app/utils/response"
 	"time"
 
@@ -34,13 +35,13 @@ func (u *Users) Login(context *gin.Context) {
 				data := gin.H{
 					"user_id":    userModel.Id,
 					"user_name":  userName,
-					"real_name":  userModel.RealName,
 					"email":      userModel.Email,
+					"real_name":  userModel.RealName,
 					"token":      userToken,
 					"updated_at": time.Now().Format(variable.DateFormat),
 				}
 				response.Success(context, consts.CurdStatusOkMsg, data)
-				go model.CreateLoginLogFactory("").LogLogin(userModel.Id, context.ClientIP(), "web", 1)
+				go model.CreateLoginLogFactory("").LogLogin(userModel.Id, context.ClientIP(), "api", 1)
 				return
 			}
 		}
@@ -61,66 +62,17 @@ func (u *Users) RefreshToken(context *gin.Context) {
 	}
 }
 
-// Show 用户查询
-func (u *Users) Show(c *gin.Context) {
-	values := controller.GetValues(c, []string{"user_name"})
-	limitStart, limit := controller.GetPage(c)
-	counts, showList := model.CreateUserFactory("").Show(values, limitStart, limit)
-	if counts > 0 && showList != nil {
-		roles := model.CreateRoleFactory().GetRoles("")
-		for _, user := range showList {
-			for _, role := range roles {
-				if user.RoleId == role.Id {
-					user.Role.RoleName = role.RoleName
-				}
-			}
-		}
-		response.Success(c, consts.CurdStatusOkMsg, gin.H{"counts": counts, "list": showList})
-	} else {
-		response.Fail(c, consts.CurdSelectFailCode, consts.CurdSelectFailMsg, "")
-	}
-}
-
-// Store 用户注册/新增
-func (u *Users) Store(c *gin.Context) {
-	//  由于本项目骨架已经将表单验证器的字段(成员)绑定在上下文，因此可以按照 GetString()、GetInt64()、GetFloat64（）等快捷获取需要的数据类型，注意：相关键名规则：  前缀+验证器结构体中的 json 标签
-	// 当然也可以通过gin框架的上下文原始方法获取，例如： c.PostForm("user_name") 获取，这样获取的数据格式为文本，需要自己继续转换
-	values := controller.GetValues(c, []string{"user_name", "pass", "email", "phone", "real_name", "role_id.int"})
-	if errMsg := model.CreateUserFactory("").UserIsExists(0, values["user_name"].(string), values["email"].(string), values["phone"].(string)); errMsg != "" {
-		response.Fail(c, consts.CurdRegisterFailCode, errMsg, "")
-		return
-	}
-	if curd.CreateUserCurdFactory().Store(values) {
-		response.Success(c, consts.CurdStatusOkMsg, "")
-	} else {
-		response.Fail(c, consts.CurdRegisterFailCode, consts.CurdRegisterFailMsg, "")
-	}
-}
-
 // Update 用户更新
 func (u *Users) Update(c *gin.Context) {
-	values := controller.GetValues(c, []string{"id.float64", "user_name", "pass", "real_name", "phone", "email", "avatar", "remark"})
+	values := controller.GetValues(c, []string{"id.float64", "user_name", "real_name", "phone", "email", "avatar", "remark"})
 	if errMsg := model.CreateUserFactory("").UserIsExists(values["id"].(float64), values["user_name"].(string), values["email"].(string), values["phone"].(string)); errMsg != "" {
 		response.Fail(c, consts.CurdRegisterFailCode, errMsg, "")
 		return
 	}
-	//注意：这里没有实现权限控制逻辑，例如：超级管理管理员可以更新全部用户数据，普通用户只能修改自己的数据。目前只是验证了token有效、合法之后就可以进行后续操作
-	// 实际使用请根据真是业务实现权限控制逻辑、再进行数据库操作
 	if curd.CreateUserCurdFactory().Update(values) {
 		response.Success(c, consts.CurdStatusOkMsg, "")
 	} else {
 		response.Fail(c, consts.CurdUpdateFailCode, consts.CurdUpdateFailMsg, "")
-	}
-
-}
-
-// Destroy 删除记录
-func (u *Users) Destroy(context *gin.Context) {
-	userId := context.GetFloat64("id")
-	if model.CreateUserFactory("").Destroy(userId) {
-		response.Success(context, consts.CurdStatusOkMsg, "")
-	} else {
-		response.Fail(context, consts.CurdDeleteFailCode, consts.CurdDeleteFailMsg, "")
 	}
 }
 
@@ -138,10 +90,51 @@ func (u *Users) Logout(context *gin.Context) {
 	if token, ok := context.Get("token"); !ok {
 		response.Fail(context, 2001, "TOKEN 获取失败，请重试", "")
 	} else {
-		if ok := model.CreateUserFactory("").Logout(token.(string), context.GetFloat64("id")); !ok {
+		userId, ok := context.Get("user_id")
+		if !ok {
+			response.Fail(context, 4001, "用户信息读取失败", "")
+			return
+		}
+		if ok = model.CreateUserFactory("").Logout(token.(string), float64(userId.(int64))); !ok {
 			response.Fail(context, 4001, "TOKEN 清除失败，请重试", "")
 		} else {
 			response.Success(context, "退出成功", "")
 		}
+	}
+}
+
+// EmailVerify 邮件验证码
+func (u *Users) EmailVerify(c *gin.Context) {
+
+}
+
+// Register 注册
+func (u *Users) Register(c *gin.Context) {
+	values := controller.GetValues(c, []string{"user_name", "pass", "email", "phone", "real_name"})
+	if errMsg := model.CreateUserFactory("").UserIsExists(0, values["user_name"].(string), values["email"].(string), values["phone"].(string)); errMsg != "" {
+		response.Fail(c, consts.CurdRegisterFailCode, errMsg, "")
+		return
+	}
+	if curd.CreateUserCurdFactory().Store(values) {
+		response.Success(c, consts.CurdStatusOkMsg, "")
+	} else {
+		response.Fail(c, consts.CurdRegisterFailCode, consts.CurdRegisterFailMsg, "")
+	}
+}
+
+// ResetPass 修改密码
+func (u *Users) ResetPass(c *gin.Context) {
+	values := controller.GetValues(c, []string{"id.float64", "pass", "original_pass"})
+	// 检查旧密码是否正确
+	original := md5_encrypt.Base64Md5(values["original_pass"].(string))
+	if !model.CreateUserFactory("").CheckPass(values["id"].(float64), original) {
+		response.Fail(c, consts.CurdUpdateFailCode, "原密码不正确", "")
+		return
+	}
+	pass := md5_encrypt.Base64Md5(values["pass"].(string))
+	if model.CreateUserFactory("").ResetPass(values["id"].(float64), pass) {
+		response.Success(c, consts.CurdStatusOkMsg, "")
+	} else {
+		response.Fail(c, consts.CurdUpdateFailCode, consts.CurdUpdateFailMsg, "")
 	}
 }

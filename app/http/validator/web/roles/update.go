@@ -3,8 +3,8 @@ package roles
 import (
 	"github.com/gin-gonic/gin"
 	"goskeleton/app/http/controller/web"
+	"goskeleton/app/http/validator"
 	"goskeleton/app/http/validator/core/data_transfer"
-	validatorWeb "goskeleton/app/http/validator/web"
 	"goskeleton/app/utils/response"
 )
 
@@ -18,7 +18,7 @@ type Update struct {
 func (u Update) CheckParams(context *gin.Context) {
 	//1.基本的验证规则没有通过
 	if err := context.ShouldBind(&u); err != nil {
-		response.ErrorParam(context, validatorWeb.Translate(err))
+		response.ErrorParam(context, validator.Translate(err))
 		return
 	}
 

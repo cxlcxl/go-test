@@ -1,4 +1,4 @@
-package validator_web
+package validator
 
 import (
 	"errors"

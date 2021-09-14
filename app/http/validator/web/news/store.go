@@ -2,8 +2,8 @@ package news
 
 import (
 	"goskeleton/app/http/controller/web"
+	"goskeleton/app/http/validator"
 	"goskeleton/app/http/validator/core/data_transfer"
-	validator_web "goskeleton/app/http/validator/web"
 	"goskeleton/app/utils/response"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +20,7 @@ type Store struct {
 func (s Store) CheckParams(context *gin.Context) {
 	//1.基本的验证规则没有通过
 	if err := context.ShouldBind(&s); err != nil {
-		response.ErrorParam(context, validator_web.Translate(err))
+		response.ErrorParam(context, validator.Translate(err))
 		return
 	}
 

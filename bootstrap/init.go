@@ -4,8 +4,8 @@ import (
 	_ "goskeleton/app/core/destroy" // 监听程序退出信号，用于资源的释放
 	"goskeleton/app/global/my_errors"
 	"goskeleton/app/global/variable"
+	"goskeleton/app/http/validator"
 	"goskeleton/app/http/validator/common/register_validator"
-	validator_web "goskeleton/app/http/validator/web"
 	"goskeleton/app/service/sys_log_hook"
 	"goskeleton/app/utils/casbin_v2"
 	"goskeleton/app/utils/gorm_v2"
@@ -111,7 +111,7 @@ func init() {
 	}
 
 	// 初始化验证器语言
-	if err := validator_web.LoadValidatorLocal(); err != nil {
+	if err := validator.LoadValidatorLocal(); err != nil {
 		log.Fatal(err.Error())
 	}
 }

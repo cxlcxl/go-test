@@ -40,6 +40,9 @@ func CheckTokenAuth() gin.HandlerFunc {
 						// token验证通过，同时绑定在请求上下文
 						context.Set(key, customeToken)
 						context.Set("token", token[1])
+						context.Set("user_id", customeToken.UserId)
+						context.Set("username", customeToken.Name)
+						context.Set("email", customeToken.Email)
 					}
 					context.Next()
 				} else {

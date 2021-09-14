@@ -2,17 +2,12 @@ package model
 
 import (
 	"goskeleton/app/global/variable"
+	"goskeleton/app/model/tool"
 	"time"
 )
 
-// 操作数据库喜欢使用gorm自带语法的开发者可以参考 GinSkeleton-Admin 系统相关代码
-// Admin 项目地址：https://gitee.com/daitougege/gin-skeleton-admin-backend/
-// gorm_v2 提供的语法+ ginskeleton 实践 ：  http://gitee.com/daitougege/gin-skeleton-admin-backend/blob/master/app/model/button_cn_en.go
-
-// 参数说明： 传递空值，默认使用 配置文件选项：UseDbType（mysql）
-
-func CreateNewFactory(sqlType string) *NewsModel {
-	return &NewsModel{BaseModel: BaseModel{DB: UseDbConn(sqlType)}}
+func NewsDB() *NewsModel {
+	return &NewsModel{BaseModel: BaseModel{DB: UseDbConn("")}}
 }
 
 type NewsModel struct {
@@ -22,11 +17,21 @@ type NewsModel struct {
 	Des       string `json:"des"`
 	Content   string `json:"content"`
 	State     int    `json:"state"`
+	*BaseColumns
 }
 
 // TableName 表名
 func (n *NewsModel) TableName() string {
 	return "news"
+}
+
+// SearchNews ..
+func (n *NewsModel) SearchNews(query *tool.WhereQuery, pageStart, limit int) (counts int, news []NewsModel) {
+	if counts = n.count(query); counts > 0 {
+		query.QueryParams = append(query.QueryParams, pageStart, limit)
+		n.Raw("SELECT * FROM news WHERE "+query.QuerySql+" LIMIT ?,?", query.QueryParams...).Order("updated_at desc").Find(&news)
+	}
+	return
 }
 
 // Store 新增
@@ -36,4 +41,10 @@ func (n *NewsModel) Store(title, des, content string, userId int) bool {
 		return true
 	}
 	return false
+}
+
+// count 查询符合条件的总数
+func (n *NewsModel) count(query *tool.WhereQuery) (counts int) {
+	n.Raw("SELECT COUNT(*) AS counts FROM news WHERE "+query.QuerySql, query.QueryParams...).First(&counts)
+	return
 }
