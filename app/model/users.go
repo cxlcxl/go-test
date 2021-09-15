@@ -270,8 +270,18 @@ func (u *UsersModel) CheckPass(id float64, pass string) bool {
 	return pass == originalPass
 }
 
-// ResetPass 检查密码
+// ResetPass 修改密码
 func (u *UsersModel) ResetPass(id float64, pass string) bool {
-	affect := u.Exec("UPDATE users SET pass = ? WHERE id = ? LIMIT 1", pass, id).RowsAffected
-	return affect > 0
+	err := u.Exec("UPDATE users SET pass = ? WHERE id = ? LIMIT 1", pass, id).Error
+	if err == nil {
+		u.OauthDestroyToken(id)
+		return true
+	}
+	return false
+}
+
+// EmailExists 检查密码
+func (u *UsersModel) EmailExists(email string) (userId int) {
+	u.Raw("SELECT id FROM users WHERE email = ? LIMIT 1", email).First(&userId)
+	return
 }

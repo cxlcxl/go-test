@@ -16,6 +16,7 @@ require (
 	github.com/go-playground/validator/v10 v10.9.0 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gorilla/websocket v1.4.2
+	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible // indirect
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/qifengzhang007/goCurl v1.2.9
 	github.com/spf13/cobra v1.1.0

@@ -49,7 +49,7 @@ const (
 	CurdLoginFailUserNameErr string = "账号错误"
 	CurdLoginFailPassErr     string = "密码错误"
 
-	//文件上传
+	// FilesUploadFailCode 文件上传
 	FilesUploadFailCode            int    = -400250
 	FilesUploadFailMsg             string = "文件上传失败, 获取上传文件发生错误!"
 	FilesUploadMoreThanMaxSizeCode int    = -400251
@@ -57,19 +57,19 @@ const (
 	FilesUploadMimeTypeFailCode    int    = -400252
 	FilesUploadMimeTypeFailMsg     string = "文件mime类型不允许"
 
-	//websocket
+	// websocket
 	WsServerNotStartCode int    = -400300
 	WsServerNotStartMsg  string = "websocket 服务没有开启，请在配置文件开启，相关路径：config/config.yml"
 	WsOpenFailCode       int    = -400301
 	WsOpenFailMsg        string = "websocket open阶段初始化基本参数失败"
 
-	//验证码
+	// 验证码
 	CaptchaGetParamsInvalidMsg    string = "获取验证码：提交的验证码参数无效,请检查验证码ID以及文件名后缀是否完整"
 	CaptchaGetParamsInvalidCode   int    = -400350
 	CaptchaCheckParamsInvalidMsg  string = "校验验证码：提交的参数无效，请检查 【验证码ID、验证码值】 提交时的键名是否与配置项一致"
 	CaptchaCheckParamsInvalidCode int    = -400351
 	CaptchaCheckOkMsg             string = "验证码校验通过"
-	//CaptchaCheckOkCode            int    = 200
+	// CaptchaCheckFailCode int    = 200
 	CaptchaCheckFailCode int    = -400355
 	CaptchaCheckFailMsg  string = "验证码校验失败"
 
@@ -84,4 +84,8 @@ const (
 	// PassRule 密码正则
 	PassRule  = "^[a-zA-Z]{1}[a-zA-Z0-9.@#$%&*!]{5,19}$"
 	PassError = "密码限字母开头 6-20 位的字符"
+	// EmailGlobalSubject
+	EmailGlobalSubject = "磨基系统邮件"
+	// UserEmailVerifyText 用户验证码邮件
+	UserEmailVerifyText = `您的验证码为：%s，任何情况请勿将验证码透露给他人！`
 )

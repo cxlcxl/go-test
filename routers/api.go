@@ -51,7 +51,8 @@ func InitApiRouter() *gin.Engine {
 		users := vApi.Group("user/")
 		{
 			users.POST("login", validatorFactory.Create("ApiUserLogin"))
-			users.POST("email-verify", (&api.Users{}).EmailVerify)
+			users.POST("email-verify", validatorFactory.Create("ApiUserEmailVerify"))
+			users.POST("forgot-reset", validatorFactory.Create("ApiUserForgotReset"))
 
 			auth := users.Use(authorization.CheckTokenAuth())
 			{

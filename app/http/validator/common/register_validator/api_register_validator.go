@@ -12,8 +12,10 @@ func ApiRegisterValidator() {
 	containers := container.CreateContainersFactory()
 	// 验证器注册 map
 	validators := map[string]interface{}{
-		"HomeNews":     home.News{},
-		"ApiUserLogin": apiUsers.Login{},
+		"HomeNews":           home.News{},
+		"ApiUserLogin":       apiUsers.Login{},
+		"ApiUserEmailVerify": apiUsers.EmailVerify{},
+		"ApiUserForgotReset": apiUsers.ForgotReset{},
 	}
 
 	for validator, forStruct := range validators {
