@@ -1,6 +1,8 @@
 package model
 
 import (
+	"errors"
+	"gorm.io/gorm"
 	"goskeleton/app/global/variable"
 	"goskeleton/app/model/tool"
 	"time"
@@ -47,4 +49,13 @@ func (n *NewsModel) Store(title, des, content string, userId int) bool {
 func (n *NewsModel) count(query *tool.WhereQuery) (counts int) {
 	n.Raw("SELECT COUNT(*) AS counts FROM news WHERE "+query.QuerySql, query.QueryParams...).First(&counts)
 	return
+}
+
+// Show 单条内容数据
+func (n *NewsModel) Show(newId int) (info NewsModel, ok bool) {
+	err := n.Raw("SELECT * FROM news WHERE id = ? LIMIT 1", newId).First(&info).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) || info.Title == "" {
+		return info, false
+	}
+	return info, true
 }

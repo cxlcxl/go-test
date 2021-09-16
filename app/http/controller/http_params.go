@@ -2,7 +2,7 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
-	"goskeleton/app/global/variable"
+	"goskeleton/app/global/consts"
 	"strconv"
 	"strings"
 )
@@ -135,11 +135,11 @@ func GetForms(c *gin.Context, keys []string) map[string]interface{} {
 
 // GetPage 快速获取分页
 func GetPage(c *gin.Context) (pageStart, limit int) {
-	page, err := strconv.Atoi(c.Query(variable.PageKey))
+	page, err := strconv.Atoi(c.Query(consts.PageKey))
 	if err != nil {
 		page = 1
 	}
-	limit, err = strconv.Atoi(c.Query(variable.PageLimit))
+	limit, err = strconv.Atoi(c.Query(consts.PageLimit))
 	if err != nil {
 		limit = 15
 	}

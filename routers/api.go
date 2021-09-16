@@ -47,6 +47,7 @@ func InitApiRouter() *gin.Engine {
 	vApi := router.Group("/api/v1/")
 	{
 		vApi.GET("news", validatorFactory.Create("HomeNews"))
+		vApi.GET("news/:id", (&api.Home{}).Detail)
 
 		users := vApi.Group("user/")
 		{

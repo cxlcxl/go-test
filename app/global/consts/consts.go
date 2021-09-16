@@ -73,6 +73,9 @@ const (
 	CaptchaCheckFailCode int    = -400355
 	CaptchaCheckFailMsg  string = "验证码校验失败"
 
+	// Pages 分页信息
+	PageKey   = "page"  //  分页
+	PageLimit = "limit" //  分页
 	// JsonMarshalFailed 表单验证json序列化操作
 	JsonMarshalFailed = "JSON 序列化失败"
 	// PhoneRule 手机号码正则

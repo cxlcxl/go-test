@@ -1,6 +1,7 @@
 package app_cache
 
 import (
+	"errors"
 	"goskeleton/app/utils/redis_factory"
 	"log"
 )
@@ -43,6 +44,17 @@ func (r *Redis) SetEX(key string, val interface{}, ttl int) error {
 	return nil
 }
 
+func (r *Redis) SetNX(key string, val interface{}) error {
+	defer r.closeClient()
+
+	_, err := r.client.Execute("setnx", key, val)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *Redis) Get(key string) (string, error) {
 	defer r.closeClient()
 
@@ -66,5 +78,5 @@ func (r *Redis) Delete(key string) error {
 
 // Flush redis不可以清空数据库
 func (r *Redis) Flush() error {
-	return nil
+	return errors.New("请勿清空 Redis 缓存")
 }

@@ -1,6 +1,7 @@
 package home
 
 import (
+	"goskeleton/app/global/consts"
 	"goskeleton/app/http/controller/api"
 	"goskeleton/app/http/validator"
 	common_data_type "goskeleton/app/http/validator/common/data_type"
@@ -13,7 +14,7 @@ import (
 // 门户类前端接口模拟一个获取新闻的参数验证器
 
 type News struct {
-	NewsType string `form:"newsType" json:"newsType"  binding:"required,min=1"` //  验证规则：必填，最小长度为1
+	Title string `form:"title" json:"title"`
 	common_data_type.Page
 }
 
@@ -27,7 +28,7 @@ func (n News) CheckParams(context *gin.Context) {
 	//  该函数主要是将绑定的数据以 键=>值 形式直接传递给下一步（控制器）
 	extraAddBindDataContext := data_transfer.DataAddContext(n, "", context)
 	if extraAddBindDataContext == nil {
-		response.ErrorSystem(context, "HomeNews表单验证器json化失败", "")
+		response.ErrorSystem(context, consts.JsonMarshalFailed, "")
 	} else {
 		// 验证完成，调用控制器,并将验证器成员(字段)递给控制器，保持上下文数据一致性
 		(&api.Home{}).News(extraAddBindDataContext)
