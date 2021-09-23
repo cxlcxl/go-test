@@ -23,24 +23,31 @@ func CreateUserFactory(sqlType string) *UsersModel {
 }
 
 type UsersModel struct {
-	BaseModel     `json:"-"`
-	UserName      string         `json:"user_name" gorm:"column:user_name"`
-	Pass          string         `json:"-"`
-	Email         string         `json:"email"`
-	Phone         string         `json:"phone"`
-	Avatar        string         `json:"avatar"`
-	RealName      string         `json:"real_name" gorm:"column:real_name"`
-	RoleId        int64          `json:"role_id" gorm:"column:role_id"`
-	Status        int            `json:"status"`
-	Token         string         `json:"token"`
-	Role          RoleModel      `json:"roles"`
-	LastLoginTime tool.LocalTime `json:"last_login_time" gorm:"column:last_login_time"`
-	*BaseColumns
+	BaseModel `json:"-"`
+	UserBaseInfo
+	Password string `json:"-" gorm:"password"`
+	Operator int    `json:"operator"`
+	RoleId   int64  `json:"role_id" gorm:"column:role_id"`
+	UserType int    `json:"user_type"`
+	Token    string `json:"token"`
+	GroupId  int    `json:"group_id"`
+	IsParent int    `json:"is_parent"`
+	ParentId int    `json:"parent_id"`
+	TimeColumns
+}
+
+type UserBaseInfo struct {
+	Id       int64  `json:"user_id" gorm:"column:user_id"`
+	UserName string `json:"user_name" gorm:"column:user_name"`
+	Email    string `json:"email"`
+	Mobile   string `json:"mobile"`
+	IsLock   int    `json:"is_lock"`
+	IsAdmin  int    `json:"is_admin"`
 }
 
 // TableName 表名
 func (u *UsersModel) TableName() string {
-	return "users"
+	return "admin_user"
 }
 
 // Store 用户注册（写一个最简单的使用账号、密码注册即可）
@@ -56,17 +63,16 @@ func (u *UsersModel) Store(values map[string]interface{}) bool {
 
 // Login 用户登录
 func (u *UsersModel) Login(userName, pass, ip string) (*UsersModel, string) {
-	sql := "select id,user_name,real_name,pass,phone,avatar,status,email from users where user_name=? or email=? limit 1"
+	sql := "select * from `" + u.TableName() + "` where user_name=? or email=? limit 1"
 	result := u.Raw(sql, userName, userName).First(u)
 	if result.Error == nil {
 		// 账号密码验证成功
-		if u.Status != 1 {
+		if u.IsLock == 1 {
 			return nil, "账号已被停用"
 		}
-		if u.Pass == md5_encrypt.Base64Md5(pass) {
+		if u.Password == md5_encrypt.MobgiPwd(pass) {
 			return u, ""
 		} else {
-			go CreateLoginLogFactory("").LogLogin(u.Id, ip, "web", 0)
 			return nil, consts.CurdLoginFailPassErr
 		}
 	} else {
@@ -92,7 +98,7 @@ func (u *UsersModel) OauthLoginToken(userId int64, token string, expiresAt int64
 func (u *UsersModel) OauthRefreshToken(userId, expiresAt int64, oldToken, newToken, clientIp, platform string) bool {
 	sql := "UPDATE oauth_access_tokens SET token=? ,expires_at=?,client_ip=?,updated_at=NOW(),action_name='refresh' WHERE fr_user_id=? AND token=?"
 	if u.Exec(sql, newToken, time.Unix(expiresAt, 0).Format(variable.DateFormat), clientIp, userId, oldToken).Error == nil {
-		go CreateLoginLogFactory("").LogLogin(userId, clientIp, platform, 1)
+		go CreateLoginLogFactory().LogLogin(userId)
 		return true
 	}
 	return false
@@ -100,7 +106,7 @@ func (u *UsersModel) OauthRefreshToken(userId, expiresAt int64, oldToken, newTok
 
 // UpdateUserLoginInfo 更新用户登陆次数、最近一次登录ip、最近一次登录时间
 func (u *UsersModel) UpdateUserLoginInfo(userId int64) {
-	sql := "UPDATE users SET last_login_time=? WHERE id=?"
+	sql := "UPDATE `" + u.TableName() + "` SET last_login_time=? WHERE id=?"
 	_ = u.Exec(sql, time.Now().Format(variable.DateFormat), userId)
 }
 
@@ -108,7 +114,7 @@ func (u *UsersModel) UpdateUserLoginInfo(userId int64) {
 func (u *UsersModel) OauthResetToken(userId float64, newPass string) bool {
 	//如果用户新旧密码一致，直接返回true，不需要处理
 	userItem, err := u.ShowOneItem(userId)
-	if userItem != nil && err == nil && userItem.Pass == newPass {
+	if userItem != nil && err == nil && userItem.Password == newPass {
 		return true
 	} else if userItem != nil {
 		sql := "DELETE FROM oauth_access_tokens WHERE fr_user_id=?"
@@ -157,7 +163,7 @@ func (u *UsersModel) OauthCheckTokenIsOk(userId int64, token string) bool {
 func (u *UsersModel) SetTokenInvalid(userId int) bool {
 	sql := "delete from `oauth_access_tokens` where `fr_user_id`=?  "
 	if u.Exec(sql, userId).Error == nil {
-		if u.Exec("update users set status=0 where id=?", userId).Error == nil {
+		if u.Exec("update `"+u.TableName()+"` set status=0 where id=?", userId).Error == nil {
 			return true
 		}
 	}
@@ -166,7 +172,7 @@ func (u *UsersModel) SetTokenInvalid(userId int) bool {
 
 // ShowOneItem 根据用户ID查询一条信息
 func (u *UsersModel) ShowOneItem(userId float64) (*UsersModel, error) {
-	sql := "SELECT `id`, `user_name`,`pass`, `real_name`, `phone`, `status` FROM `users` WHERE id=? LIMIT 1"
+	sql := "SELECT `id`, `user_name`,`pass`, `real_name`, `phone`, `status` FROM `" + u.TableName() + "` WHERE id=? LIMIT 1"
 	result := u.Raw(sql, userId).First(u)
 	if result.Error == nil {
 		return u, nil
@@ -177,7 +183,7 @@ func (u *UsersModel) ShowOneItem(userId float64) (*UsersModel, error) {
 
 // 查询数据之前统计条数
 func (u *UsersModel) counts(where *tool.WhereQuery) (counts int64) {
-	sql := "SELECT count(*) as counts FROM users WHERE " + where.QuerySql
+	sql := "SELECT count(*) as counts FROM " + u.TableName() + " WHERE " + where.QuerySql
 	if res := u.Raw(sql, where.QueryParams...).First(&counts); res.Error != nil {
 		variable.ZapLog.Error("UsersModel - counts 查询数据条数出错", zap.Error(res.Error))
 	}
@@ -191,7 +197,7 @@ func (u *UsersModel) Show(values map[string]interface{}, limitStart, limitItems 
 	}
 	where := (&tool.WhereQuery{}).GenerateWhere(whereSlice)
 	if counts = u.counts(where); counts > 0 {
-		sql := "SELECT * FROM `users` WHERE " + where.QuerySql + " LIMIT ?,?"
+		sql := "SELECT * FROM `" + u.TableName() + "` WHERE " + where.QuerySql + " LIMIT ?,?"
 		where.QueryParams = append(where.QueryParams, limitStart, limitItems)
 		if res := u.Raw(sql, where.QueryParams...).Order("updated_at desc").Find(&temp); res.RowsAffected > 0 {
 			return counts, temp
@@ -243,7 +249,7 @@ func (u *UsersModel) UserIsExists(userId float64, userName, email, phone string)
 		whereSlice["id"] = []string{"!=", strconv.Itoa(int(userId))}
 	}
 	where := (&tool.WhereQuery{Filter: true}).GenerateWhere(whereSlice)
-	sql := "SELECT * FROM users WHERE " + where.QuerySql
+	sql := "SELECT * FROM `" + u.TableName() + "` WHERE " + where.QuerySql
 
 	var user UsersModel
 	if result := u.Raw(sql, where.QueryParams...).First(&user); result.Error != nil {
@@ -252,7 +258,7 @@ func (u *UsersModel) UserIsExists(userId float64, userName, email, phone string)
 		if len(email) > 0 && user.Email == email {
 			return "用户邮箱已存在"
 		}
-		if len(phone) > 0 && user.Phone == phone {
+		if len(phone) > 0 && user.Mobile == phone {
 			return "手机号码已存在"
 		}
 		if user.UserName == userName {
@@ -266,13 +272,13 @@ func (u *UsersModel) UserIsExists(userId float64, userName, email, phone string)
 // CheckPass 检查密码
 func (u *UsersModel) CheckPass(id float64, pass string) bool {
 	originalPass := ""
-	u.Raw("SELECT pass FROM users WHERE id = ? LIMIT 1", id).First(&originalPass)
+	u.Raw("SELECT pass FROM `"+u.TableName()+"` WHERE id = ? LIMIT 1", id).First(&originalPass)
 	return pass == originalPass
 }
 
 // ResetPass 修改密码
 func (u *UsersModel) ResetPass(id float64, pass string) bool {
-	err := u.Exec("UPDATE users SET pass = ? WHERE id = ? LIMIT 1", pass, id).Error
+	err := u.Exec("UPDATE `"+u.TableName()+"` SET pass = ? WHERE id = ? LIMIT 1", pass, id).Error
 	if err == nil {
 		u.OauthDestroyToken(id)
 		return true
@@ -282,6 +288,12 @@ func (u *UsersModel) ResetPass(id float64, pass string) bool {
 
 // EmailExists 检查密码
 func (u *UsersModel) EmailExists(email string) (userId int) {
-	u.Raw("SELECT id FROM users WHERE email = ? LIMIT 1", email).First(&userId)
+	u.Raw("SELECT id FROM `"+u.TableName()+"` WHERE email = ? LIMIT 1", email).First(&userId)
+	return
+}
+
+// GetsByIds 以ID查询用户信息
+func (u *UsersModel) GetsByIds(ids []int64) (users []*UserBaseInfo) {
+	u.Table(u.TableName()).Where("user_id in ?", ids).Find(&users)
 	return
 }

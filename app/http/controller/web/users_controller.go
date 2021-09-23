@@ -29,18 +29,17 @@ func (u *Users) Login(context *gin.Context) {
 	if userModel != nil {
 		userTokenFactory := userstoken.CreateUserFactory()
 		expireAt := variable.ConfigYml.GetInt64("Token.JwtTokenCreatedExpireAt")
-		if userToken, err := userTokenFactory.GenerateToken(userModel.Id, userModel.UserName, userModel.RealName, userModel.Email, userModel.Avatar, expireAt); err == nil {
+		if userToken, err := userTokenFactory.GenerateToken(userModel.Id, userModel.UserName, "", userModel.Email, "", expireAt); err == nil {
 			if userTokenFactory.RecordLoginToken(userToken, context.ClientIP()) {
 				data := gin.H{
 					"user_id":    userModel.Id,
 					"user_name":  userName,
-					"real_name":  userModel.RealName,
 					"email":      userModel.Email,
 					"token":      userToken,
 					"updated_at": time.Now().Format(variable.DateFormat),
 				}
 				response.Success(context, consts.CurdStatusOkMsg, data)
-				go model.CreateLoginLogFactory("").LogLogin(userModel.Id, context.ClientIP(), "web", 1)
+				go model.CreateLoginLogFactory().LogLogin(userModel.Id)
 				return
 			}
 		}
@@ -67,14 +66,6 @@ func (u *Users) Show(c *gin.Context) {
 	limitStart, limit := controller.GetPage(c)
 	counts, showList := model.CreateUserFactory("").Show(values, limitStart, limit)
 	if counts > 0 && showList != nil {
-		roles := model.CreateRoleFactory().GetRoles("")
-		for _, user := range showList {
-			for _, role := range roles {
-				if user.RoleId == role.Id {
-					user.Role.RoleName = role.RoleName
-				}
-			}
-		}
 		response.Success(c, consts.CurdStatusOkMsg, gin.H{"counts": counts, "list": showList})
 	} else {
 		response.Fail(c, consts.CurdSelectFailCode, consts.CurdSelectFailMsg, "")

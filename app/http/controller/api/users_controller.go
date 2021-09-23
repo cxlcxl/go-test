@@ -33,18 +33,17 @@ func (u *Users) Login(context *gin.Context) {
 	if userModel != nil {
 		userTokenFactory := userstoken.CreateUserFactory()
 		expireAt := variable.ConfigYml.GetInt64("Token.JwtTokenCreatedExpireAt")
-		if userToken, err := userTokenFactory.GenerateToken(userModel.Id, userModel.UserName, userModel.RealName, userModel.Email, userModel.Avatar, expireAt); err == nil {
+		if userToken, err := userTokenFactory.GenerateToken(userModel.Id, userModel.UserName, "", userModel.Email, "", expireAt); err == nil {
 			if userTokenFactory.RecordLoginToken(userToken, context.ClientIP()) {
 				data := gin.H{
 					"user_id":    userModel.Id,
 					"user_name":  userName,
 					"email":      userModel.Email,
-					"real_name":  userModel.RealName,
 					"token":      userToken,
 					"updated_at": time.Now().Format(variable.DateFormat),
 				}
 				response.Success(context, consts.CurdStatusOkMsg, data)
-				go model.CreateLoginLogFactory("").LogLogin(userModel.Id, context.ClientIP(), "api", 1)
+				go model.CreateLoginLogFactory().LogLogin(userModel.Id)
 				return
 			}
 		}
@@ -155,12 +154,12 @@ func (u *Users) Register(c *gin.Context) {
 func (u *Users) ResetPass(c *gin.Context) {
 	values := controller.GetValues(c, []string{"id.float64", "pass", "original_pass"})
 	// 检查旧密码是否正确
-	original := md5_encrypt.Base64Md5(values["original_pass"].(string))
+	original := md5_encrypt.MobgiPwd(values["original_pass"].(string))
 	if !model.CreateUserFactory("").CheckPass(values["id"].(float64), original) {
 		response.Fail(c, consts.CurdUpdateFailCode, "原密码不正确", "")
 		return
 	}
-	pass := md5_encrypt.Base64Md5(values["pass"].(string))
+	pass := md5_encrypt.MobgiPwd(values["pass"].(string))
 	if model.CreateUserFactory("").ResetPass(values["id"].(float64), pass) {
 		response.Success(c, consts.CurdStatusOkMsg, "")
 	} else {
@@ -184,7 +183,7 @@ func (u *Users) ForgotPass(c *gin.Context) {
 		response.Fail(c, 400, "邮箱不存在，请确认", "")
 		return
 	}
-	pass := md5_encrypt.Base64Md5(values["pass"].(string))
+	pass := md5_encrypt.MobgiPwd(values["pass"].(string))
 	if model.CreateUserFactory("").ResetPass(float64(userId), pass) {
 		// 删除验证码
 		go appCache.RedisClient().Delete("user:email:verify:" + values["email"].(string))

@@ -20,9 +20,7 @@ type HeaderParams struct {
 // CheckTokenAuth 检查token权限
 func CheckTokenAuth() gin.HandlerFunc {
 	return func(context *gin.Context) {
-
 		headerParams := HeaderParams{}
-
 		//  推荐使用 ShouldBindHeader 方式获取头参数
 		if err := context.ShouldBindHeader(&headerParams); err != nil {
 			variable.ZapLog.Error(my_errors.ErrorsValidatorBindParamsFail, zap.Error(err))

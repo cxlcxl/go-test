@@ -2,8 +2,8 @@ package tool
 
 import (
 	"database/sql/driver"
-	"fmt"
 	"goskeleton/app/global/variable"
+	"log"
 	"time"
 )
 
@@ -36,7 +36,9 @@ func (t *LocalTime) Scan(v interface{}) error {
 		*t = LocalTime{Time: value}
 		return nil
 	}
-	return fmt.Errorf("can not convert %v to timestamp", v)
+	log.Println("时间戳格式不能解析", v)
+	// return fmt.Errorf("can not convert %v to timestamp", v)
+	return nil
 }
 
 func (l LocalDate) MarshalJSON() ([]byte, error) {
@@ -58,5 +60,7 @@ func (l *LocalDate) Scan(v interface{}) error {
 		*l = LocalDate{Time: value}
 		return nil
 	}
-	return fmt.Errorf("can not convert %v to timestamp", v)
+	log.Println("时间戳格式不能解析", v)
+	// return fmt.Errorf("can not convert %v to timestamp", v)
+	return nil
 }

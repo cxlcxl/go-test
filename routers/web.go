@@ -4,6 +4,7 @@ import (
 	"goskeleton/app/global/variable"
 	"goskeleton/app/http/controller/chaptcha"
 	"goskeleton/app/http/controller/web"
+	apiCtl "goskeleton/app/http/controller/web/apis"
 	"goskeleton/app/http/middleware/authorization"
 	"goskeleton/app/http/middleware/cors"
 	validatorFactory "goskeleton/app/http/validator/core/factory"
@@ -120,6 +121,14 @@ func InitWebRouter() *gin.Engine {
 			{
 				report.GET("/info", (&web.Report{}).GetReport)
 			}
+
+			// API 板块路由
+			api := backend.Group("api/")
+			{
+				api.GET("/app", (&apiCtl.AdApp{}).GetAppList)
+				api.GET("/flow", (&apiCtl.AdApp{}).GetFlowList)
+			}
+
 			// 用户组路由
 			news := backend.Group("news/")
 			{
