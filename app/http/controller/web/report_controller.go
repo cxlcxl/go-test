@@ -3,7 +3,7 @@ package web
 import (
 	"github.com/gin-gonic/gin"
 	"goskeleton/app/http/controller"
-	"goskeleton/app/model"
+	"goskeleton/app/model/data"
 	"goskeleton/app/model/tool"
 	"goskeleton/app/utils/response"
 )
@@ -18,7 +18,7 @@ func (r *Report) GetReport(c *gin.Context) {
 		"days":    []string{"between", values["day_start"].(string), values["day_end"].(string)},
 	}
 	where := (&tool.WhereQuery{Filter: true}).GenerateWhere(whereParams)
-	showList := model.ReportThirdDataModel().Show(where)
+	showList := data.ReportThirdDataModel().Show(where)
 	response.Success(c, "请求成功", gin.H{
 		"maps": map[string]string{
 			"third_views":  "展示",

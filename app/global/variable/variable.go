@@ -56,7 +56,7 @@ func init() {
 		if len(os.Args) > 1 && strings.HasPrefix(os.Args[1], "-test") {
 			BasePath = strings.Replace(strings.Replace(curPath, `\test`, "", 1), `/test`, "", 1)
 		} else {
-			BasePath = curPath + "/../.."
+			BasePath = curPath // + "/../.."
 		}
 	} else {
 		log.Fatal(my_errors.ErrorsBasePath)

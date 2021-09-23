@@ -2,6 +2,7 @@ package api_ctl
 
 import (
 	"github.com/gin-gonic/gin"
+	"goskeleton/app/global/consts"
 	"goskeleton/app/http/controller"
 	"goskeleton/app/http/logic"
 	"goskeleton/app/model"
@@ -42,4 +43,14 @@ func (a *AdApp) GetFlowList(c *gin.Context) {
 		showList = logic.CombineFlowConfig(appKey, showList)
 	}
 	response.Success(c, "请求成功", showList)
+}
+
+func (a *AdApp) DeleteFlowConfig(c *gin.Context) {
+	flowId := c.GetFloat64("id")
+	if ok := modelApi.FlowConfDB().DeleteFlowById(int64(flowId)); !ok {
+		response.Fail(c, consts.CurdDeleteFailCode, consts.CurdDeleteFailMsg, "")
+		return
+	}
+
+	response.Success(c, "删除成功", "")
 }

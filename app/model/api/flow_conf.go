@@ -1,6 +1,7 @@
 package model_api
 
 import (
+	"gorm.io/gorm"
 	"goskeleton/app/model"
 	"goskeleton/app/model/tool"
 )
@@ -81,4 +82,34 @@ func (f *FlowConfModel) AppFlowConfig(appKeys []string) (flows []*FlowSet) {
 func (f *FlowConfModel) GetFlowByAppKey(appKey string) (flows []*FlowList) {
 	f.Raw("SELECT * FROM `"+f.TableName()+"` WHERE app_key = ?", appKey).Find(&flows)
 	return
+}
+
+// DeleteFlowById 删除配置信息要删除相关联的配置
+func (f *FlowConfModel) DeleteFlowById(id int64) bool {
+	err := f.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("DELETE FROM flow_conf WHERE id = ?", id).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec("DELETE FROM flow_ad_type_rel WHERE flow_id = ?", id).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec("DELETE FROM flow_ads_rel WHERE flow_id = ?", id).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec("DELETE FROM flow_app_rel WHERE flow_id = ?", id).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec("DELETE FROM flow_pos_rel WHERE flow_id = ?", id).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec("DELETE FROM flow_pos_policy_rel WHERE flow_id = ?", id).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return false
+	}
+	return true
 }

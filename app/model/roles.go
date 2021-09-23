@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 	"goskeleton/app/global/variable"
-	"log"
 	"strings"
 	"time"
 )
@@ -79,7 +78,6 @@ func (r *RoleModel) UpdatePermissions(permissionIds []int, roleId int) bool {
 	for i, id := range permissionIds {
 		insertSQL[i] = fmt.Sprintf("(%d,%d)", roleId, id)
 	}
-	log.Println(insertSQL, roleId)
 	err := r.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Exec("DELETE FROM role_permissions WHERE role_id = ?", roleId).Error; err != nil {
 			return err

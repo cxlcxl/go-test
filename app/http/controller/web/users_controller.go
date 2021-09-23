@@ -7,6 +7,7 @@ import (
 	"goskeleton/app/model"
 	"goskeleton/app/service/users/curd"
 	userstoken "goskeleton/app/service/users/token"
+	"goskeleton/app/utils/md5_encrypt"
 	"goskeleton/app/utils/response"
 	"time"
 
@@ -66,7 +67,7 @@ func (u *Users) Show(c *gin.Context) {
 	limitStart, limit := controller.GetPage(c)
 	counts, showList := model.CreateUserFactory("").Show(values, limitStart, limit)
 	if counts > 0 && showList != nil {
-		response.Success(c, consts.CurdStatusOkMsg, gin.H{"counts": counts, "list": showList})
+		response.Success(c, consts.CurdStatusOkMsg, gin.H{"total": counts, "list": showList})
 	} else {
 		response.Fail(c, consts.CurdSelectFailCode, consts.CurdSelectFailMsg, "")
 	}
@@ -134,5 +135,27 @@ func (u *Users) Logout(context *gin.Context) {
 		} else {
 			response.Success(context, "退出成功", "")
 		}
+	}
+}
+
+// ResetPass 修改密码
+func (u *Users) ResetPass(c *gin.Context) {
+	values := controller.GetValues(c, []string{"pass", "original_pass"})
+	// 检查旧密码是否正确
+	original := md5_encrypt.MobgiPwd(values["original_pass"].(string))
+	userId, ok := c.Get("user_id")
+	if !ok {
+		response.Fail(c, consts.CurdUpdateFailCode, "用户信息获取失败", "")
+		return
+	}
+	if !model.CreateUserFactory("").CheckPass(float64(userId.(int64)), original) {
+		response.Fail(c, consts.CurdUpdateFailCode, "原密码不正确", "")
+		return
+	}
+	pass := md5_encrypt.MobgiPwd(values["pass"].(string))
+	if model.CreateUserFactory("").ResetPass(float64(userId.(int64)), pass) {
+		response.Success(c, consts.CurdStatusOkMsg, "")
+	} else {
+		response.Fail(c, consts.CurdUpdateFailCode, consts.CurdUpdateFailMsg, "")
 	}
 }

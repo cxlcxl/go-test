@@ -1,8 +1,8 @@
-package api_users
+package users
 
 import (
 	"goskeleton/app/global/consts"
-	"goskeleton/app/http/controller/api"
+	"goskeleton/app/http/controller/web"
 	"goskeleton/app/http/validator"
 	"goskeleton/app/http/validator/core/data_transfer"
 	"goskeleton/app/utils/response"
@@ -12,7 +12,6 @@ import (
 )
 
 type ResetPass struct {
-	Id           int    `form:"id" json:"id" binding:"required"`
 	Pass         string `form:"pass" json:"pass" binding:"min=6,max=20"`
 	OriginalPass string `form:"original_pass" json:"original_pass" binding:"min=6,max=20"`
 }
@@ -34,6 +33,6 @@ func (r ResetPass) CheckParams(context *gin.Context) {
 	if extraAddBindDataContext == nil {
 		response.ErrorSystem(context, consts.JsonMarshalFailed, "")
 	} else {
-		(&api.Users{}).ResetPass(extraAddBindDataContext)
+		(&web.Users{}).ResetPass(extraAddBindDataContext)
 	}
 }

@@ -3,7 +3,6 @@ package routers
 import (
 	"goskeleton/app/global/variable"
 	"goskeleton/app/http/controller/api"
-	"goskeleton/app/http/middleware/authorization"
 	"goskeleton/app/http/middleware/cors"
 	validatorFactory "goskeleton/app/http/validator/core/factory"
 	"io"
@@ -48,19 +47,6 @@ func InitApiRouter() *gin.Engine {
 	{
 		vApi.GET("news", validatorFactory.Create("HomeNews"))
 		vApi.GET("news/:id", (&api.Home{}).Detail)
-
-		users := vApi.Group("user/")
-		{
-			users.POST("login", validatorFactory.Create("ApiUserLogin"))
-			users.POST("email-verify", validatorFactory.Create("ApiUserEmailVerify"))
-			users.POST("forgot-reset", validatorFactory.Create("ApiUserForgotReset"))
-
-			auth := users.Use(authorization.CheckTokenAuth())
-			{
-				auth.GET("info", (&api.Users{}).UserInfo)
-				auth.POST("logout", (&api.Users{}).Logout)
-			}
-		}
 	}
 	return router
 }

@@ -3,7 +3,6 @@ package register_validator
 import (
 	"goskeleton/app/core/container"
 	"goskeleton/app/http/validator/api/home"
-	apiUsers "goskeleton/app/http/validator/api/users"
 )
 
 // ApiRegisterValidator 各个业务模块验证器必须进行注册（初始化），程序启动时会自动加载到容器
@@ -12,10 +11,7 @@ func ApiRegisterValidator() {
 	containers := container.CreateContainersFactory()
 	// 验证器注册 map
 	validators := map[string]interface{}{
-		"HomeNews":           home.News{},
-		"ApiUserLogin":       apiUsers.Login{},
-		"ApiUserEmailVerify": apiUsers.EmailVerify{},
-		"ApiUserForgotReset": apiUsers.ForgotReset{},
+		"HomeNews": home.News{},
 	}
 
 	for validator, forStruct := range validators {
