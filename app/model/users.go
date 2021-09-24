@@ -11,13 +11,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// 操作数据库喜欢使用gorm自带语法的开发者可以参考 GinSkeleton-Admin 系统相关代码
-// Admin 项目地址：https://gitee.com/daitougege/gin-skeleton-admin-backend/
-// gorm_v2 提供的语法+ ginskeleton 实践 ：  http://gitee.com/daitougege/gin-skeleton-admin-backend/blob/master/app/model/button_cn_en.go
-
-// 创建 userFactory
-// 参数说明： 传递空值，默认使用 配置文件选项：UseDbType（mysql）
-
 func CreateUserFactory(sqlType string) *UsersModel {
 	return &UsersModel{BaseModel: BaseModel{DB: UseDbConn(sqlType)}}
 }
@@ -25,15 +18,21 @@ func CreateUserFactory(sqlType string) *UsersModel {
 type UsersModel struct {
 	BaseModel `json:"-"`
 	UserBaseInfo
-	Password string `json:"-" gorm:"password"`
-	Operator int    `json:"operator"`
-	RoleId   int64  `json:"role_id" gorm:"column:role_id"`
-	UserType int    `json:"user_type"`
-	Token    string `json:"token"`
-	GroupId  int    `json:"group_id"`
-	IsParent int    `json:"is_parent"`
-	ParentId int    `json:"parent_id"`
+	Password     string `json:"-" gorm:"password"`
+	Operator     int    `json:"operator"`
+	RoleId       int64  `json:"role_id" gorm:"column:role_id"`
+	UserType     int    `json:"user_type"`
+	Token        string `json:"token"`
+	GroupId      int    `json:"group_id"`
+	IsParent     int    `json:"is_parent"`
+	IsCheck      int    `json:"is_check" gorm:"column:is_check"`
+	RegisterType int    `json:"register_type" gorm:"column:register_type"`
+	CardId       string `json:"card_id" gorm:"column:card_id"`
+	Contact      string `json:"contact" gorm:"column:contact"`
+	Address      string `json:"address" gorm:"column:address"`
+	ParentId     int64  `json:"parent_id"`
 	TimeColumns
+	UserExtendColumn
 }
 
 type UserBaseInfo struct {
@@ -43,6 +42,11 @@ type UserBaseInfo struct {
 	Mobile   string `json:"mobile"`
 	IsLock   int    `json:"is_lock"`
 	IsAdmin  int    `json:"is_admin"`
+}
+
+type UserExtendColumn struct {
+	ParentName   string `json:"parent_name"`
+	UserTypeName string `json:"user_type_name"`
 }
 
 // TableName 表名
@@ -183,23 +187,16 @@ func (u *UsersModel) ShowOneItem(userId float64) (*UsersModel, error) {
 
 // 查询数据之前统计条数
 func (u *UsersModel) counts(where *tool.WhereQuery) (counts int64) {
-	sql := "SELECT count(*) as counts FROM " + u.TableName() + " WHERE " + where.QuerySql
-	if res := u.Raw(sql, where.QueryParams...).First(&counts); res.Error != nil {
+	if res := u.Table(u.TableName()).Where(where.QuerySql, where.QueryParams...).Count(&counts); res.Error != nil {
 		variable.ZapLog.Error("UsersModel - counts 查询数据条数出错", zap.Error(res.Error))
 	}
 	return counts
 }
 
 // Show 查询（根据关键词模糊查询）
-func (u *UsersModel) Show(values map[string]interface{}, limitStart, limitItems int) (counts int64, temp []*UsersModel) {
-	whereSlice := map[string]interface{}{
-		"user_name": []string{"like", values["user_name"].(string)},
-	}
-	where := (&tool.WhereQuery{}).GenerateWhere(whereSlice)
+func (u *UsersModel) Show(where *tool.WhereQuery, limitStart, size int) (counts int64, temp []*UsersModel) {
 	if counts = u.counts(where); counts > 0 {
-		sql := "SELECT * FROM `" + u.TableName() + "` WHERE " + where.QuerySql + " LIMIT ?,?"
-		where.QueryParams = append(where.QueryParams, limitStart, limitItems)
-		if res := u.Raw(sql, where.QueryParams...).Order("updated_at desc").Find(&temp); res.RowsAffected > 0 {
+		if u.Table(u.TableName()).Where(where.QuerySql, where.QueryParams...).Order("update_time desc").Offset(limitStart).Limit(size).Find(&temp).RowsAffected > 0 {
 			return counts, temp
 		}
 	}
@@ -296,4 +293,14 @@ func (u *UsersModel) EmailExists(email string) (userId int) {
 func (u *UsersModel) GetsByIds(ids []int64) (users []*UserBaseInfo) {
 	u.Table(u.TableName()).Where("user_id in ?", ids).Find(&users)
 	return
+}
+
+// UpdateGroup 修改用户组
+func (u *UsersModel) UpdateGroup(ids []int64, groupId float64) bool {
+	return u.Table(u.TableName()).Where("user_id in ?", ids).Update("group_id", groupId).RowsAffected > 0
+}
+
+// DoCheckUser 审核用户
+func (u *UsersModel) DoCheckUser(userId int64, values map[string]interface{}) bool {
+	return u.Table(u.TableName()).Where("user_id = ?", userId).Updates(values).RowsAffected > 0
 }

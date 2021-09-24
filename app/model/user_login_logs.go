@@ -18,7 +18,7 @@ type LoginLogsModel struct {
 
 // TableName 表名
 func (l *LoginLogsModel) TableName() string {
-	return "admin_user_login_logs"
+	return "admin_user_login_log"
 }
 
 // LogLogin 写登陆记录

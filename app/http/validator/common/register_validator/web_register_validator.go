@@ -5,8 +5,7 @@ import (
 	"goskeleton/app/http/validator/common/upload_files"
 	"goskeleton/app/http/validator/common/websocket"
 	"goskeleton/app/http/validator/web/flow"
-	"goskeleton/app/http/validator/web/news"
-	"goskeleton/app/http/validator/web/roles"
+	"goskeleton/app/http/validator/web/groups"
 	"goskeleton/app/http/validator/web/users"
 )
 
@@ -16,21 +15,21 @@ func WebRegisterValidator() {
 	containers := container.CreateContainersFactory()
 	// 验证器注册 map
 	validators := map[string]interface{}{
-		"UsersLogin":           users.Login{},
-		"UsersLogout":          users.Logout{},
-		"RefreshToken":         users.RefreshToken{},
-		"UsersShow":            users.Show{},
-		"UsersStore":           users.Store{},
-		"UsersUpdate":          users.Update{},
-		"UsersDestroy":         users.Destroy{},
-		"UsersResetPass":       users.ResetPass{},
-		"NewsStore":            news.Store{},
-		"RolesStore":           roles.Store{},
-		"RolesUpdate":          roles.Update{},
-		"PermissionRoleUpdate": roles.PermissionUpdate{},
-		"UploadFiles":          upload_files.UpFiles{}, // 文件上传
-		"WebsocketConnect":     websocket.Connect{},
-		"FlowDestroy":          flow.Destroy{},
+		"UsersLogin":            users.Login{},
+		"UsersLogout":           users.Logout{},
+		"RefreshToken":          users.RefreshToken{},
+		"UsersStore":            users.Store{},
+		"UsersUpdate":           users.Update{},
+		"UsersDestroy":          users.Destroy{},
+		"UsersResetPass":        users.ResetPass{},
+		"UsersChangeGroup":      users.ChangeGroup{},
+		"UsersCheck":            users.Check{},
+		"GroupStore":            groups.Store{},
+		"GroupUpdate":           groups.Update{},
+		"PermissionGroupUpdate": groups.PermissionUpdate{},
+		"UploadFiles":           upload_files.UpFiles{}, // 文件上传
+		"WebsocketConnect":      websocket.Connect{},
+		"FlowDestroy":           flow.Destroy{},
 	}
 
 	for validator, forStruct := range validators {

@@ -17,7 +17,6 @@ import (
 )
 
 // 该路由主要设置 后台管理系统等后端应用路由
-
 func InitWebRouter() *gin.Engine {
 	var router *gin.Engine
 	// 非调试模式（生产模式） 日志写到日志文件
@@ -43,10 +42,6 @@ func InitWebRouter() *gin.Engine {
 
 	router.GET("/", func(context *gin.Context) {
 		context.String(http.StatusOK, "HelloWorld,这是后端模块")
-	})
-
-	router.GET("/test", func(c *gin.Context) {
-		(&web.News{}).Test(c)
 	})
 
 	// 处理静态资源（不建议gin框架处理静态资源，参见 public/readme.md 说明 ）
@@ -93,23 +88,26 @@ func InitWebRouter() *gin.Engine {
 				users.GET("info", (&web.Users{}).UserInfo)
 				users.POST("logout", validatorFactory.Create("UsersLogout"))
 				users.POST("refreshtoken", validatorFactory.Create("RefreshToken"))
-				users.GET("index", validatorFactory.Create("UsersShow"))
+				users.GET("index", (&web.Users{}).Show)
 				users.POST("create", validatorFactory.Create("UsersStore"))
 				users.POST("edit", validatorFactory.Create("UsersUpdate"))
 				users.POST("delete", validatorFactory.Create("UsersDestroy"))
 				users.POST("reset-pass", validatorFactory.Create("UsersResetPass"))
+				users.POST("change-group", validatorFactory.Create("UsersChangeGroup"))
+				users.GET("mobgi-account", (&web.Users{}).MobgiAccount)
+				users.POST("check", validatorFactory.Create("UsersCheck"))
 			}
 
-			role := backend.Group("role/")
+			role := backend.Group("group/")
 			{
-				role.GET("index", (&web.Roles{}).Show)
-				role.POST("create", validatorFactory.Create("RolesStore"))
-				role.POST("edit", validatorFactory.Create("RolesUpdate"))
-				role.POST("delete", (&web.Roles{}).Destroy)
+				role.GET("index", (&web.Group{}).Show)
+				role.POST("create", validatorFactory.Create("GroupStore"))
+				role.POST("edit", validatorFactory.Create("GroupUpdate"))
+				role.POST("delete", (&web.Group{}).Destroy)
 
 				permission := role.Group("permission/")
 				{
-					permission.POST("edit", validatorFactory.Create("PermissionRoleUpdate"))
+					permission.POST("edit", validatorFactory.Create("PermissionGroupUpdate"))
 				}
 			}
 
@@ -126,11 +124,6 @@ func InitWebRouter() *gin.Engine {
 				api.POST("/flow/delete", validatorFactory.Create("FlowDestroy"))
 			}
 
-			// 用户组路由
-			news := backend.Group("news/")
-			{
-				news.POST("create", validatorFactory.Create("NewsStore"))
-			}
 			// 系统配置路由
 			conf := backend.Group("conf/")
 			{

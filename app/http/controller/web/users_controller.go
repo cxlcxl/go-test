@@ -4,7 +4,9 @@ import (
 	"goskeleton/app/global/consts"
 	"goskeleton/app/global/variable"
 	"goskeleton/app/http/controller"
+	"goskeleton/app/http/logic"
 	"goskeleton/app/model"
+	"goskeleton/app/model/tool"
 	"goskeleton/app/service/users/curd"
 	userstoken "goskeleton/app/service/users/token"
 	"goskeleton/app/utils/md5_encrypt"
@@ -63,13 +65,25 @@ func (u *Users) RefreshToken(context *gin.Context) {
 
 // Show 用户查询
 func (u *Users) Show(c *gin.Context) {
-	values := controller.GetValues(c, []string{"user_name"})
+	values := controller.GetQueries(c, []string{"user_name", "check", "user_email", "user_type", "group_id.float64"})
 	limitStart, limit := controller.GetPage(c)
-	counts, showList := model.CreateUserFactory("").Show(values, limitStart, limit)
+	whereSlice := map[string]interface{}{
+		"user_name": []string{"like", values["user_name"].(string)},
+		"email":     []string{"like", values["user_email"].(string)},
+		"group_id":  values["group_id"].(float64),
+		"user_type": values["user_type"].(string),
+		"is_check":  values["check"].(string),
+	}
+	if values["group_id"].(float64) == 0 {
+		whereSlice["group_id"] = ""
+	}
+	where := (&tool.WhereQuery{Filter: true}).GenerateWhere(whereSlice)
+	counts, showList := model.CreateUserFactory("").Show(where, limitStart, limit)
 	if counts > 0 && showList != nil {
+		logic.CombineUserParent(showList)
 		response.Success(c, consts.CurdStatusOkMsg, gin.H{"total": counts, "list": showList})
 	} else {
-		response.Fail(c, consts.CurdSelectFailCode, consts.CurdSelectFailMsg, "")
+		response.Success(c, consts.CurdStatusOkMsg, []interface{}{})
 	}
 }
 
@@ -158,4 +172,40 @@ func (u *Users) ResetPass(c *gin.Context) {
 	} else {
 		response.Fail(c, consts.CurdUpdateFailCode, consts.CurdUpdateFailMsg, "")
 	}
+}
+
+// ChangeGroup 修改用户组
+func (u *Users) ChangeGroup(c *gin.Context) {
+	userIds, ok := c.Get("user_id")
+	groupId := c.GetFloat64("group_id")
+	if groupId == 0 || !ok || len(userIds.([]interface{})) == 0 {
+		response.Fail(c, consts.CurdUpdateFailCode, "请选择用户与用户组", "")
+		return
+	}
+	ids := make([]int64, len(userIds.([]interface{})))
+	for i, id := range userIds.([]interface{}) {
+		ids[i] = int64(id.(float64))
+	}
+	if model.CreateUserFactory("").UpdateGroup(ids, groupId) {
+		response.Success(c, consts.CurdStatusOkMsg, "")
+		return
+	}
+	response.Fail(c, consts.CurdUpdateFailCode, "修改失败", "")
+}
+
+// CheckUser ...
+func (u *Users) CheckUser(c *gin.Context) {
+	userId := int64(c.GetFloat64("user_id"))
+	values := controller.GetValues(c, []string{"check_msg", "mobgi_account.float64", "is_check.float64"})
+	if model.CreateUserFactory("").DoCheckUser(userId, values) {
+		response.Success(c, consts.CurdStatusOkMsg, "")
+	} else {
+		response.Fail(c, consts.CurdUpdateFailCode, "审核失败", "")
+	}
+}
+
+// MobgiAccount 查询磨基财务主体
+func (u *Users) MobgiAccount(c *gin.Context) {
+	showList := model.MobgiAccountDB().GetAll()
+	response.Success(c, consts.CurdStatusOkMsg, showList)
 }
