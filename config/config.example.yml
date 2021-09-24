@@ -130,13 +130,13 @@ Captcha:
   length: 4 # 验证码生成时的长度
 
 Feishu:
-  appId: "cli_9dfa57ceb5b29102"
-  appSecret: "U4aUbFaf8DPwKrMs0CCXChv653Q0ta3s"
-  departmentId: "od-fa43591084a110c08f769a888b027811"
-  accessTokenUrl: "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal/"
-  departmentUsersUrl: "https://open.feishu.cn/open-apis/contact/v1/department/user/list?page_size=100&offset=0&fetch_child=true"
-  batchSendMsgUrl: "https://open.feishu.cn/open-apis/message/v4/batch_send/"
-  batchSendCardUrl: "https://open.feishu.cn/open-apis/message/v4/send/"
+  appId: ""
+  appSecret: ""
+  departmentId: ""
+  accessTokenUrl: ""
+  departmentUsersUrl: ""
+  batchSendMsgUrl: ""
+  batchSendCardUrl: ""
 
 Validator:
   Local: "zh" # zh/en
