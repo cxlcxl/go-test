@@ -4,7 +4,8 @@ import (
 	"goskeleton/app/global/variable"
 	"goskeleton/app/http/controller/chaptcha"
 	"goskeleton/app/http/controller/web"
-	apiCtl "goskeleton/app/http/controller/web/apis"
+	apiCtl "goskeleton/app/http/controller/web/api"
+	"goskeleton/app/http/controller/web/data"
 	"goskeleton/app/http/middleware/authorization"
 	"goskeleton/app/http/middleware/cors"
 	validatorFactory "goskeleton/app/http/validator/core/factory"
@@ -68,14 +69,20 @@ func InitWebRouter() *gin.Engine {
 		{
 			noAuth.POST("register", validatorFactory.Create("UsersStore"))
 			noAuth.POST("login", validatorFactory.Create("UsersLogin"))
-
+			/*Use(authorization.CheckCaptchaAuth()).*/
 			// 如果加载了验证码中间件，那么就需要提交验证码才可以登陆（本质上就是给登陆接口增加了2个参数：验证码id提交时的键：captcha_id 和 验证码值提交时的键 captcha_value，具体参见配置文件）
-			//noAuth.Use(authorization.CheckCaptchaAuth()).POST("login", validatorFactory.Create(consts.ValidatorPrefix+"UsersLogin"))
+			//noAuth.POST("login", validatorFactory.Create(consts.ValidatorPrefix+"UsersLogin"))
 		}
 
 		// 【需要token+Casbin】中间件验证的路由
 		backend.Use(authorization.CheckTokenAuth())
 		{
+			// 常量请求
+			cst := backend.Group("consts")
+			{
+				cst.GET("/:constCode", (&web.GlobalConst{}).GetGlobalConst)
+			}
+
 			// 文件上传公共路由
 			uploadFiles := backend.Group("upload/")
 			{
@@ -113,7 +120,7 @@ func InitWebRouter() *gin.Engine {
 
 			report := backend.Group("report/")
 			{
-				report.GET("/info", (&web.Report{}).GetReport)
+				report.GET("/info", (&data.Report{}).GetReport)
 			}
 
 			// API 板块路由
@@ -122,6 +129,7 @@ func InitWebRouter() *gin.Engine {
 				api.GET("/app", (&apiCtl.AdApp{}).GetAppList)
 				api.GET("/flow", (&apiCtl.AdApp{}).GetFlowList)
 				api.POST("/flow/delete", validatorFactory.Create("FlowDestroy"))
+				api.GET("/flow/detail", validatorFactory.Create("FlowDetail"))
 			}
 
 			// 系统配置路由

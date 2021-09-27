@@ -5,7 +5,7 @@ import (
 	"goskeleton/app/model/tool"
 )
 
-func ReportThirdDataModel() *ReportThirdData {
+func ReportThirdDataDB() *ReportThirdData {
 	return &ReportThirdData{BaseModel: model.BaseModel{DB: model.CreateMysqlDB("Data")}}
 }
 

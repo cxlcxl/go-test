@@ -9,6 +9,7 @@ import (
 	"goskeleton/app/utils/response"
 	"net/http"
 	"path"
+	"strconv"
 	"time"
 )
 
@@ -34,6 +35,8 @@ func (c *Captcha) GenerateId(context *gin.Context) {
 // 获取验证码图像
 func (c *Captcha) GetImg(context *gin.Context) {
 	captchaId := context.Param("captchaId")
+	width := context.Query("width")
+	height := context.Query("height")
 	_, file := path.Split(context.Request.URL.Path)
 	ext := path.Ext(file)
 	id := file[:len(file)-len(ext)]
@@ -53,8 +56,15 @@ func (c *Captcha) GetImg(context *gin.Context) {
 	var vBytes bytes.Buffer
 	if ext == ".png" {
 		context.Header("Content-Type", "image/png")
-		// 设置实际业务需要的验证码图片尺寸（宽 X 高），captcha.StdWidth, captcha.StdHeight 为默认值，请自行修改为具体数字即可
-		_ = captcha.WriteImage(&vBytes, id, captcha.StdWidth, captcha.StdHeight)
+		captchaWidth, err := strconv.Atoi(width)
+		if err != nil {
+			captchaWidth = captcha.StdWidth
+		}
+		captchaHeight, err := strconv.Atoi(height)
+		if err != nil {
+			captchaWidth = captcha.StdHeight
+		}
+		_ = captcha.WriteImage(&vBytes, id, captchaWidth, captchaHeight)
 		http.ServeContent(context.Writer, context.Request, id+ext, time.Time{}, bytes.NewReader(vBytes.Bytes()))
 	}
 }

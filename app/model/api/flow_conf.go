@@ -30,7 +30,7 @@ type FlowConfModel struct {
 }
 
 type FlowList struct {
-	model.IdColumns
+	Id             int64  `gorm:"column:id" json:"id"`
 	ConfType       int    `gorm:"column:conf_type" json:"conf_type"` // 1全局配置，2定向配置
 	ConfName       string `gorm:"column:conf_name" json:"conf_name"`
 	AppKey         string `gorm:"column:app_key" json:"app_key"`
@@ -40,6 +40,11 @@ type FlowList struct {
 	OperatorId     int64  `gorm:"column:operator_id" json:"operator_id"` // 操作人
 	Operator       string `json:"operator"`                              //
 	model.TimeColumns
+}
+
+type SysConf struct {
+	SysConfCondition string   `json:"sys_conf_condition"`
+	SysConfContent   []string `json:"sys_conf_content"`
 }
 
 // FlowConfDB 创建DB对象
@@ -112,4 +117,9 @@ func (f *FlowConfModel) DeleteFlowById(id int64) bool {
 		return false
 	}
 	return true
+}
+
+func (f *FlowConfModel) GetFlowConfById(id int64) (conf *FlowConfModel) {
+	f.Table(f.TableName()).Where("id = ?", id).First(&conf)
+	return
 }

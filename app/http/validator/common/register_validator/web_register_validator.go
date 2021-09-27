@@ -30,6 +30,7 @@ func WebRegisterValidator() {
 		"UploadFiles":           upload_files.UpFiles{}, // 文件上传
 		"WebsocketConnect":      websocket.Connect{},
 		"FlowDestroy":           flow.Destroy{},
+		"FlowDetail":            flow.DetailFlow{},
 	}
 
 	for validator, forStruct := range validators {

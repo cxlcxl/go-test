@@ -10,6 +10,7 @@ func ConfigDB() *ConfigModel {
 
 type ConfigModel struct {
 	BaseModel `json:"-"`
+	Id        int64  `gorm:"primarykey" json:"id"`
 	Key       string `json:"key"`
 	Name      string `json:"name"`
 	Value     string `json:"value"`
@@ -18,7 +19,7 @@ type ConfigModel struct {
 	Bak0      string `json:"bak0"`
 	Bak1      string `json:"bak1"`
 	Bak2      string `json:"bak2"`
-	*BaseColumns
+	TimeColumns
 }
 
 func (c *ConfigModel) TableName() string {

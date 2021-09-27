@@ -3,7 +3,7 @@ package flow
 import (
 	"github.com/gin-gonic/gin"
 	"goskeleton/app/global/consts"
-	apiCtl "goskeleton/app/http/controller/web/apis"
+	apiCtl "goskeleton/app/http/controller/web/api"
 	"goskeleton/app/http/validator"
 	"goskeleton/app/http/validator/core/data_transfer"
 	"goskeleton/app/utils/response"

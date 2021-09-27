@@ -15,16 +15,6 @@ type BaseModel struct {
 	*gorm.DB `gorm:"-" json:"-"`
 }
 
-type IdColumns struct {
-	Id int64 `gorm:"column:id" json:"id"`
-}
-
-type BaseColumns struct {
-	Id        int64          `gorm:"primarykey" json:"id"`
-	CreatedAt tool.LocalTime `json:"created_at"`
-	UpdatedAt tool.LocalTime `json:"updated_at"`
-}
-
 type TimeColumns struct {
 	CreatedAt tool.LocalTime `json:"create_time" gorm:"column:create_time"`
 	UpdatedAt tool.LocalTime `json:"update_time" gorm:"column:update_time"`
@@ -59,38 +49,42 @@ func UseDbConn(sqlType string) *gorm.DB {
 }
 
 // CreateMysqlDB 创建一个连接
-//func CreateMysqlDB(database string) *gorm.DB {
-//	sqlType := "Mysql"
-//	if variable.GormDbMysqlData == nil {
-//		// 首字母大写
-//		database = strings.ToUpper(database[0:1]) + strings.ToLower(database[1:])
-//		var err error
-//		variable.GormDbMysqlData, err = gorm_v2.GetSqlDriver(sqlType, database, 1)
-//		if err != nil {
-//			variable.ZapLog.Error(my_errors.ErrorsDialectorDbInitFail+sqlType, zap.Error(err))
-//		}
-//	}
-//	return variable.GormDbMysqlData
-//}
-
-// CreateMysqlDB 创建一个连接
 func CreateMysqlDB(database string) *gorm.DB {
 	// 首字母大写
 	database = strings.ToUpper(database[0:1]) + strings.ToLower(database[1:])
-	var err error
-	sqlType := "Mysql"
-	DbConn := variable.GormDbMysqlData
-	switch strings.ToLower(database) {
-	case "api":
-		DbConn = variable.GormDbMysqlApi
-	default:
-		DbConn = variable.GormDbMysqlData
-	}
-	if DbConn == nil {
-		DbConn, err = gorm_v2.GetSqlDriver(sqlType, database, 1)
-		if err != nil {
-			variable.ZapLog.Error(my_errors.ErrorsDialectorDbInitFail+sqlType, zap.Error(err))
-		}
+	var DbConn *gorm.DB
+	lowerConnectName := strings.ToLower(database)
+	if lowerConnectName == "api" {
+		DbConn = apiDbConnect()
+	} else if lowerConnectName == "data" {
+		DbConn = dataDbConnect()
+	} else {
+		variable.ZapLog.Error("未知的数据库连接")
+		return nil
 	}
 	return DbConn
+}
+
+func apiDbConnect() *gorm.DB {
+	if variable.GormDbMysqlApi == nil {
+		variable.GormDbMysqlApi = createDriver("Api")
+	}
+	return variable.GormDbMysqlApi
+}
+
+func dataDbConnect() *gorm.DB {
+	if variable.GormDbMysqlData == nil {
+		variable.GormDbMysqlData = createDriver("Data")
+	}
+	return variable.GormDbMysqlData
+}
+
+func createDriver(d string) (driver *gorm.DB) {
+	var err error
+	driver, err = gorm_v2.GetSqlDriver("Mysql", d, 1)
+	if err != nil {
+		variable.ZapLog.Error("创建 MYSQL 驱动失败，数据库为："+d, zap.Error(err))
+		return nil
+	}
+	return
 }

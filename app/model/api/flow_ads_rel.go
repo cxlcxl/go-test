@@ -1,16 +1,12 @@
 package model_api
 
 import (
-	"fmt"
-	"goskeleton/app/global/variable"
 	"goskeleton/app/model"
-	"time"
-
-	"go.uber.org/zap"
+	"goskeleton/app/model/tool"
 )
 
-func CreateFlowAdsRelFactory(sqlType string) *FlowAdsRelModel {
-	return &FlowAdsRelModel{BaseModel: model.BaseModel{DB: model.UseDbConn(sqlType)}}
+func FlowAdsRelDB() *FlowAdsRelModel {
+	return &FlowAdsRelModel{BaseModel: model.BaseModel{DB: model.CreateMysqlDB("Api")}}
 }
 
 type FlowAdsRelModel struct {
@@ -27,41 +23,19 @@ type FlowAdsRelModel struct {
 	LimitTime       int     `gorm:"column:limit_time" json:"limit_time"`       // 限制请求间隔时间
 	Weight          float64 `json:"weight"`                                    // 权重
 	Del             int     `json:"del"`                                       // 删除标志，0未删除1删除
+	model.TimeColumns
 }
 
-// 表名
+// TableName 表名
 func (f *FlowAdsRelModel) TableName() string {
 	return "flow_ads_rel"
 }
 
-// 查询
-func (f *FlowAdsRelModel) FetchRows(sql string, query ...interface{}) *FlowAdsRelModel {
-	// result := f.Select(sql, query...).Find()
-	result := f.Select(sql, query...).Find(f)
-	if result.Error == nil {
-		return f
-	} else {
-		fmt.Println("err0r", result.Error)
-		return nil
+// GetsBy 查询
+func (f *FlowAdsRelModel) GetsBy(query *tool.WhereQuery, order string) (list []*FlowAdsRelModel) {
+	if order == "" {
+		order = "update_time desc"
 	}
-}
-
-// 查询单条数据
-func (f *FlowAdsRelModel) FetchOne(sql string, query ...interface{}) *FlowAdsRelModel {
-	result := f.Raw(sql, query...).First(f)
-	if result.Error == nil {
-		return f
-	} else {
-		variable.ZapLog.Error("查询出错:", zap.Error(result.Error))
-	}
-	return nil
-}
-
-// 用户刷新token
-func (u *FlowAdsRelModel) OauthRefreshToken(userId, expiresAt int64, oldToken, newToken, clientIp string) bool {
-	sql := "UPDATE   tb_oauth_access_tokens   SET  token=? ,expires_at=?,client_ip=?,updated_at=NOW(),action_name='refresh'  WHERE   fr_user_id=? AND token=?"
-	if u.Exec(sql, newToken, time.Unix(expiresAt, 0).Format(variable.DateFormat), clientIp, userId, oldToken).Error == nil {
-		return true
-	}
-	return false
+	f.Table(f.TableName()).Where(query.QuerySql, query.QueryParams...).Order(order).Find(&list)
+	return
 }
