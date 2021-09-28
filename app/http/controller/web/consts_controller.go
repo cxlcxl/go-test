@@ -3,7 +3,7 @@ package web
 import (
 	"github.com/gin-gonic/gin"
 	"goskeleton/app/global/consts"
-	"goskeleton/app/model"
+	"goskeleton/app/model/tool"
 	"goskeleton/app/utils/response"
 	"strings"
 )
@@ -17,37 +17,37 @@ func (cs *GlobalConst) GetGlobalConst(c *gin.Context) {
 	var data interface{}
 	switch strings.ToLower(code) {
 	case "M-AD-SUB-TYPE":
-		data = model.MAdSubType
+		data = tool.MAdSubType
 	case "M-AD-TYPE":
-		data = model.MAdType
+		data = tool.MAdType
 	case "PLATFORM":
-		data = model.MPlatformDesc
+		data = tool.MPlatformDesc
 	case "AD-TYPES":
-		data = model.AppTypes
+		data = tool.AppTypes
 	case "M-AD-SUB-TYPE-DESC":
-		data = model.MAdSubTypeDesc
+		data = tool.MAdSubTypeDesc
 	case "M-AD-POS-TYPE":
-		data = model.MAdPosType
+		data = tool.MAdPosType
 	case "M-AD-POS-TYPE-NAME":
-		data = model.MAdPosTypeName
+		data = tool.MAdPosTypeName
 	case "M-CUSTOM-SUB-TYPE":
-		data = model.MCustomSubType
+		data = tool.MCustomSubType
 	case "M-EMBED-SUB-TYPE":
-		data = model.MEmbedSubType
+		data = tool.MEmbedSubType
 	case "M-NEW-EMBED-SUB-TYPE":
-		data = model.MNewEmbedSubType
+		data = tool.MNewEmbedSubType
 	case "M-TEMPLATE-SUB-TYPE":
-		data = model.MTemplateSubType
+		data = tool.MTemplateSubType
 	case "M-EMBED-SIZE":
-		data = model.MEmbedSize
+		data = tool.MEmbedSize
 	case "M-BANNER-SIZE":
-		data = model.MBannerSize
+		data = tool.MBannerSize
 	case "M-NEW-EMBED-SIZE":
-		data = model.MNewEmbedSize
+		data = tool.MNewEmbedSize
 	case "USER-TYPE":
-		data = model.UserType
+		data = tool.UserType
 	case "USER-CHECK-TYPE":
-		data = model.UserCheckType
+		data = tool.UserCheckType
 	default:
 		response.Fail(c, consts.CurdSelectFailCode, "不存在请求的常量", "")
 		return

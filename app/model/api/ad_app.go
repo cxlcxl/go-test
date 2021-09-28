@@ -84,3 +84,9 @@ func (a *AdAppModel) counts(query *tool.WhereQuery) (counts int) {
 	a.Raw("SELECT COUNT(*) AS counts FROM `"+a.TableName()+"` WHERE "+query.QuerySql+" LIMIT 1", query.QueryParams...).First(&counts)
 	return
 }
+
+// GetBy 获取单条app的基础信息
+func (a *AdAppModel) GetBy(query *tool.WhereQuery) (app *AppBaseInfo) {
+	a.Where(query.QuerySql, query.QueryParams...).First(&app)
+	return
+}

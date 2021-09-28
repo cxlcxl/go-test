@@ -32,12 +32,16 @@ func (t LocalTime) Value() (driver.Value, error) {
 
 func (t *LocalTime) Scan(v interface{}) error {
 	value, ok := v.(time.Time)
-	if ok {
-		*t = LocalTime{Time: value}
-		return nil
+	if !ok {
+		switch v.(type) {
+		case int64:
+			value = time.Unix(v.(int64), 0)
+		default:
+			log.Println("时间戳格式不能解析", v)
+			return nil
+		}
 	}
-	log.Println("时间戳格式不能解析", v)
-	// return fmt.Errorf("can not convert %v to timestamp", v)
+	*t = LocalTime{Time: value}
 	return nil
 }
 
@@ -56,11 +60,15 @@ func (l LocalDate) Value() (driver.Value, error) {
 
 func (l *LocalDate) Scan(v interface{}) error {
 	value, ok := v.(time.Time)
-	if ok {
-		*l = LocalDate{Time: value}
-		return nil
+	if !ok {
+		switch v.(type) {
+		case int64:
+			value = time.Unix(v.(int64), 0)
+		default:
+			log.Println("时间戳格式不能解析", v)
+			return nil
+		}
 	}
-	log.Println("时间戳格式不能解析", v)
-	// return fmt.Errorf("can not convert %v to timestamp", v)
+	*l = LocalDate{Time: value}
 	return nil
 }

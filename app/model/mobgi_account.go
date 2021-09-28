@@ -51,6 +51,6 @@ func (m *MobgiAccountModel) Store(title, des, content string, userId int) bool {
 
 // GetAll ...
 func (m *MobgiAccountModel) GetAll() (info []*AccountBaseColumns) {
-	m.Table(m.TableName()).Find(&info)
+	m.Find(&info)
 	return
 }

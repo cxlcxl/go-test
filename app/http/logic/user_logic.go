@@ -1,6 +1,9 @@
 package logic
 
-import "goskeleton/app/model"
+import (
+	"goskeleton/app/model"
+	"goskeleton/app/model/tool"
+)
 
 // CombineUserParent 组合用户列表的父级账号等...
 func CombineUserParent(users []*model.UsersModel) {
@@ -11,10 +14,10 @@ func CombineUserParent(users []*model.UsersModel) {
 				parentIds = append(parentIds, user.ParentId)
 			}
 			// 用户类型
-			users[i].UserTypeName = model.UserType[user.UserType]
+			users[i].UserTypeName = tool.UserType[user.UserType]
 		}
 		if len(parentIds) > 0 {
-			parents := model.CreateUserFactory("").GetsByIds(parentIds)
+			parents := model.CreateUserFactory().GetsByIds(parentIds)
 			parentUserMap := make(map[int64]string, len(parents))
 			for _, parent := range parents {
 				parentUserMap[parent.Id] = parent.UserName

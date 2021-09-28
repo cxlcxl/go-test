@@ -5,7 +5,6 @@ import (
 	"goskeleton/app/global/consts"
 	"goskeleton/app/http/controller"
 	"goskeleton/app/http/logic"
-	"goskeleton/app/model"
 	modelApi "goskeleton/app/model/api"
 	"goskeleton/app/model/tool"
 	"goskeleton/app/utils/response"
@@ -17,7 +16,7 @@ func (a *AdApp) GetAppList(c *gin.Context) {
 	values := controller.GetQueries(c, []string{"app_name", "platform"})
 	limitStart, pageSize := controller.GetPage(c)
 	whereParams := map[string]interface{}{
-		"is_check": model.UserCheckPass,
+		"is_check": tool.UserCheckPass,
 		"platform": values["platform"].(string),
 		"or": map[string]interface{}{
 			"app_name": []string{"like", values["app_name"].(string)},

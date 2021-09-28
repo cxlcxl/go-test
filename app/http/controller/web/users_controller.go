@@ -22,7 +22,7 @@ type Users struct{}
 func (u *Users) Login(context *gin.Context) {
 	userName := context.GetString("user_name")
 	pass := context.GetString("pass")
-	userModelFact := model.CreateUserFactory("")
+	userModelFact := model.CreateUserFactory()
 	userModel, errMsg := userModelFact.Login(userName, pass, context.ClientIP())
 	if errMsg != "" {
 		response.Fail(context, consts.CurdLoginFailCode, errMsg, "")
@@ -78,7 +78,7 @@ func (u *Users) Show(c *gin.Context) {
 		whereSlice["group_id"] = ""
 	}
 	where := (&tool.WhereQuery{Filter: true}).GenerateWhere(whereSlice)
-	counts, showList := model.CreateUserFactory("").Show(where, limitStart, limit)
+	counts, showList := model.CreateUserFactory().Show(where, limitStart, limit)
 	if counts > 0 && showList != nil {
 		logic.CombineUserParent(showList)
 		response.Success(c, consts.CurdStatusOkMsg, gin.H{"total": counts, "list": showList})
@@ -92,7 +92,7 @@ func (u *Users) Store(c *gin.Context) {
 	//  由于本项目骨架已经将表单验证器的字段(成员)绑定在上下文，因此可以按照 GetString()、GetInt64()、GetFloat64（）等快捷获取需要的数据类型，注意：相关键名规则：  前缀+验证器结构体中的 json 标签
 	// 当然也可以通过gin框架的上下文原始方法获取，例如： c.PostForm("user_name") 获取，这样获取的数据格式为文本，需要自己继续转换
 	values := controller.GetValues(c, []string{"user_name", "pass", "email", "phone", "real_name", "role_id.int"})
-	if errMsg := model.CreateUserFactory("").UserIsExists(0, values["user_name"].(string), values["email"].(string), values["phone"].(string)); errMsg != "" {
+	if errMsg := model.CreateUserFactory().UserIsExists(0, values["user_name"].(string), values["email"].(string), values["phone"].(string)); errMsg != "" {
 		response.Fail(c, consts.CurdRegisterFailCode, errMsg, "")
 		return
 	}
@@ -106,7 +106,7 @@ func (u *Users) Store(c *gin.Context) {
 // Update 用户更新
 func (u *Users) Update(c *gin.Context) {
 	values := controller.GetValues(c, []string{"id.float64", "user_name", "pass", "real_name", "phone", "email", "avatar", "remark"})
-	if errMsg := model.CreateUserFactory("").UserIsExists(values["id"].(float64), values["user_name"].(string), values["email"].(string), values["phone"].(string)); errMsg != "" {
+	if errMsg := model.CreateUserFactory().UserIsExists(values["id"].(float64), values["user_name"].(string), values["email"].(string), values["phone"].(string)); errMsg != "" {
 		response.Fail(c, consts.CurdRegisterFailCode, errMsg, "")
 		return
 	}
@@ -123,7 +123,7 @@ func (u *Users) Update(c *gin.Context) {
 // Destroy 删除记录
 func (u *Users) Destroy(context *gin.Context) {
 	userId := context.GetFloat64("id")
-	if model.CreateUserFactory("").Destroy(userId) {
+	if model.CreateUserFactory().Destroy(userId) {
 		response.Success(context, consts.CurdStatusOkMsg, "")
 	} else {
 		response.Fail(context, consts.CurdDeleteFailCode, consts.CurdDeleteFailMsg, "")
@@ -144,7 +144,7 @@ func (u *Users) Logout(context *gin.Context) {
 	if token, ok := context.Get("token"); !ok {
 		response.Fail(context, 2001, "TOKEN 获取失败，请重试", "")
 	} else {
-		if ok := model.CreateUserFactory("").Logout(token.(string), context.GetFloat64("id")); !ok {
+		if ok := model.CreateUserFactory().Logout(token.(string), context.GetFloat64("id")); !ok {
 			response.Fail(context, 4001, "TOKEN 清除失败，请重试", "")
 		} else {
 			response.Success(context, "退出成功", "")
@@ -162,12 +162,12 @@ func (u *Users) ResetPass(c *gin.Context) {
 		response.Fail(c, consts.CurdUpdateFailCode, "用户信息获取失败", "")
 		return
 	}
-	if !model.CreateUserFactory("").CheckPass(float64(userId.(int64)), original) {
+	if !model.CreateUserFactory().CheckPass(float64(userId.(int64)), original) {
 		response.Fail(c, consts.CurdUpdateFailCode, "原密码不正确", "")
 		return
 	}
 	pass := md5_encrypt.MobgiPwd(values["pass"].(string))
-	if model.CreateUserFactory("").ResetPass(float64(userId.(int64)), pass) {
+	if model.CreateUserFactory().ResetPass(float64(userId.(int64)), pass) {
 		response.Success(c, consts.CurdStatusOkMsg, "")
 	} else {
 		response.Fail(c, consts.CurdUpdateFailCode, consts.CurdUpdateFailMsg, "")
@@ -186,7 +186,7 @@ func (u *Users) ChangeGroup(c *gin.Context) {
 	for i, id := range userIds.([]interface{}) {
 		ids[i] = int64(id.(float64))
 	}
-	if model.CreateUserFactory("").UpdateGroup(ids, groupId) {
+	if model.CreateUserFactory().UpdateGroup(ids, groupId) {
 		response.Success(c, consts.CurdStatusOkMsg, "")
 		return
 	}
@@ -197,7 +197,7 @@ func (u *Users) ChangeGroup(c *gin.Context) {
 func (u *Users) CheckUser(c *gin.Context) {
 	userId := int64(c.GetFloat64("user_id"))
 	values := controller.GetValues(c, []string{"check_msg", "mobgi_account.float64", "is_check.float64"})
-	if model.CreateUserFactory("").DoCheckUser(userId, values) {
+	if model.CreateUserFactory().DoCheckUser(userId, values) {
 		response.Success(c, consts.CurdStatusOkMsg, "")
 	} else {
 		response.Fail(c, consts.CurdUpdateFailCode, "审核失败", "")

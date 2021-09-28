@@ -60,8 +60,7 @@ func (f *FlowConfModel) TableName() string {
 // Show ...
 func (f *FlowConfModel) Show(query *tool.WhereQuery, limitStart, size int) (apps []*FlowConfModel, counts int) {
 	if counts = f.counts(query); counts > 0 {
-		query.QueryParams = append(query.QueryParams, limitStart, size)
-		f.Raw("SELECT * FROM `"+f.TableName()+"` WHERE "+query.QuerySql+" LIMIT ?,?", query.QueryParams...).Order("update_time desc").Find(&apps)
+		f.Table(f.TableName()).Where(query.QuerySql, query.QueryParams...).Order("update_time desc").Offset(limitStart).Limit(size).Find(&apps)
 		return
 	} else {
 		return
@@ -69,7 +68,7 @@ func (f *FlowConfModel) Show(query *tool.WhereQuery, limitStart, size int) (apps
 }
 
 func (f *FlowConfModel) counts(query *tool.WhereQuery) (counts int) {
-	f.Raw("SELECT COUNT(*) AS counts FROM `"+f.TableName()+"` WHERE "+query.QuerySql+" LIMIT 1", query.QueryParams...).First(&counts)
+	f.Table(f.TableName()).Select("COUNT(*) AS counts").Where(query.QuerySql, query.QueryParams...).First(&counts)
 	return
 }
 
@@ -85,7 +84,7 @@ func (f *FlowConfModel) AppFlowConfig(appKeys []string) (flows []*FlowSet) {
 }
 
 func (f *FlowConfModel) GetFlowByAppKey(appKey string) (flows []*FlowList) {
-	f.Raw("SELECT * FROM `"+f.TableName()+"` WHERE app_key = ?", appKey).Find(&flows)
+	f.Table(f.TableName()).Where("app_key = ?", appKey).Order("update_time desc").Find(&flows)
 	return
 }
 

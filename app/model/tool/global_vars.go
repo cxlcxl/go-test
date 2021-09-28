@@ -1,4 +1,4 @@
-package model
+package tool
 
 const (
 	UserCheckPass    = 1

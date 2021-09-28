@@ -6,6 +6,7 @@ import (
 	"goskeleton/app/model"
 	modelApi "goskeleton/app/model/api"
 	"goskeleton/app/model/tool"
+	"log"
 )
 
 // CombineAppConfig 应用配置信息组合配置
@@ -34,7 +35,7 @@ func CombineAppConfig(apps []*modelApi.AppBaseInfo) []*modelApi.AppBaseInfo {
 func CombineFlowConfig(appKey string, flows []*modelApi.FlowList) []*modelApi.FlowList {
 	userIds := make([]int64, len(flows))
 	for i, flow := range flows {
-		flows[i].ConfTypeName = model.ConfTypes[flow.ConfType]
+		flows[i].ConfTypeName = tool.ConfTypes[flow.ConfType]
 		userIds[i] = flow.OperatorId
 	}
 	params := map[string]interface{}{"app_key": appKey}
@@ -42,7 +43,7 @@ func CombineFlowConfig(appKey string, flows []*modelApi.FlowList) []*modelApi.Fl
 	// 基本信息版本
 	adsRelConf := modelApi.AdsRelConfDB().GetsBy(where)
 	// 操作人
-	users := model.CreateUserFactory("").GetsByIds(userIds)
+	users := model.CreateUserFactory().GetsByIds(userIds)
 	confTmp := make(map[int]string, len(adsRelConf))
 	userTmp := make(map[int64]string, len(users))
 	if len(adsRelConf) > 0 {
@@ -119,19 +120,25 @@ func UnmarshalFlowConf(detail *modelApi.FlowConfModel) (flowDetail map[string]in
 		_ = json.Unmarshal([]byte(detail.SysConf), &sysConf)
 		flowDetail["sys_conf"] = sysConf
 	}
-	flowDetail["ad_info"] = combineAdInfo(detail.Id, detail.AppKey, detail.RelVersion)
+	adInfo := combineAdInfo(detail.Id, detail.AppKey, detail.RelVersion)
+	for t, name := range tool.MAdSubType {
+		if _, ok := adInfo[t]; !ok {
+			adInfo[t] = map[string]interface{}{"ad_type": t, "name": name, "status": 0}
+		}
+	}
+	flowDetail["ad_info"] = adInfo
 	return
 }
 
 // 流量配置组合广告配置信息
-func combineAdInfo(flowId int64, appKey string, relVersion int) interface{} {
+func combineAdInfo(flowId int64, appKey string, relVersion int) map[int]map[string]interface{} {
 	where := (&tool.WhereQuery{}).GenerateWhere(map[string]interface{}{"flow_id": flowId})
 	flowAdTypeRel := modelApi.FlowAdTypeRelDB().GetsBy(where, "ad_type asc")
 	if len(flowAdTypeRel) > 0 {
 		adInfo := make(map[int]map[string]interface{}, 0)
 		for _, relModel := range flowAdTypeRel {
 			// 广告类型异常
-			adTypeName, ok := model.MAdSubType[relModel.AdType]
+			adTypeName, ok := tool.MAdSubType[relModel.AdType]
 			if !ok {
 				continue
 			}
@@ -144,11 +151,14 @@ func combineAdInfo(flowId int64, appKey string, relVersion int) interface{} {
 				"integration_ads_list": integrationAdsList,
 			}
 			// 填充广告类型数据
-			if relModel.Id != 0 {
-				fillAdType(adInfo, relModel)
+			fillAdType(adInfo, relModel)
+			// 因逻辑相同可同时填充一般广告商、优先广告商、DSP广告商
+			fillGeneratePriorityDsp(adInfo, relModel, flowId)
+			if relModel.IsAppRel == 1 {
+				fillAppRel(adInfo, relModel, flowId, appKey)
 			}
-			if relModel.IsPriority == 1 {
-				fillPriority(adInfo, relModel, flowId)
+			if relModel.IsBlockPolicy == 1 {
+				fillPosPolicy(adInfo, relModel, flowId, appKey)
 			}
 		}
 
@@ -168,25 +178,53 @@ func fillAdType(adInfo map[int]map[string]interface{}, flowAdTypeRel *modelApi.F
 	adInfo[flowAdTypeRel.AdType]["is_block_policy"] = flowAdTypeRel.IsBlockPolicy
 	adInfo[flowAdTypeRel.AdType]["is_default"] = flowAdTypeRel.IsDefault
 }
-func fillPriority(adInfo map[int]map[string]interface{}, flowAdTypeRel *modelApi.FlowAdTypeRelModel, flowId int64) {
-	params := map[string]interface{}{"ad_type": flowAdTypeRel.AdType, "flow_id": flowId, "conf_type": 2}
+func fillGeneratePriorityDsp(adInfo map[int]map[string]interface{}, flowAdTypeRel *modelApi.FlowAdTypeRelModel, flowId int64) {
+	params := map[string]interface{}{"ad_type": flowAdTypeRel.AdType, "flow_id": flowId, "conf_type": []interface{}{"in", []int{1, 2, 3}}}
 	where := (&tool.WhereQuery{}).GenerateWhere(params)
 	flowAdsRel := modelApi.FlowAdsRelDB().GetsBy(where, "position asc")
 	if len(flowAdsRel) == 0 {
 		adInfo[flowAdTypeRel.AdType]["priority_list"] = []interface{}{}
+		adInfo[flowAdTypeRel.AdType]["general_list"] = []interface{}{}
+		adInfo[flowAdTypeRel.AdType]["dsp_list"] = []interface{}{}
 	} else {
-		priority := make([]map[string]interface{}, len(flowAdsRel))
+		priority := make([]map[string]interface{}, 0)
+		generate := make([]map[string]interface{}, 0)
+		dsp := make([]map[string]interface{}, 0)
 		adsId := make([]string, 0)
-		for i, relModel := range flowAdsRel {
+		for _, relModel := range flowAdsRel {
 			adsId = append(adsId, relModel.AdsId)
-			priority[i] = map[string]interface{}{
-				"ads_id":        relModel.AdsId,
-				"name":          relModel.AdsId,
-				"limit_num":     relModel.LimitNum,
-				"exposure_num":  relModel.ExposureNum,
-				"req_limit_num": relModel.ReqLimitNum,
-				"limit_time":    relModel.LimitTime,
-				"position":      relModel.Position,
+			// 有优先广告商且当前数据是优先广告商
+			if flowAdTypeRel.IsPriority == 1 && relModel.ConfType == 2 {
+				priority = append(priority, map[string]interface{}{
+					"ads_id":        relModel.AdsId,
+					"name":          relModel.AdsId,
+					"limit_num":     relModel.LimitNum,
+					"exposure_num":  relModel.ExposureNum,
+					"req_limit_num": relModel.ReqLimitNum,
+					"limit_time":    relModel.LimitTime,
+					"position":      relModel.Position,
+				})
+			}
+			// 当前数据是一般广告商
+			if relModel.ConfType == 1 {
+				generate = append(generate, map[string]interface{}{
+					"ads_id":        relModel.AdsId,
+					"name":          relModel.AdsId,
+					"limit_num":     relModel.LimitNum,
+					"exposure_num":  relModel.ExposureNum,
+					"req_limit_num": relModel.ReqLimitNum,
+					"limit_time":    relModel.LimitTime,
+					"position":      relModel.Position,
+					"weight":        relModel.Weight,
+				})
+			}
+			// 当前数据是DSP广告商
+			if relModel.ConfType == 3 {
+				dsp = append(dsp, map[string]interface{}{
+					"ads_id":   relModel.AdsId,
+					"name":     relModel.AdsId,
+					"position": relModel.Position,
+				})
 			}
 		}
 		params = map[string]interface{}{"ad_type": []interface{}{"in", []int{1, 3}}, "ads_id": []interface{}{"in", adsId}}
@@ -198,12 +236,58 @@ func fillPriority(adInfo map[int]map[string]interface{}, flowAdTypeRel *modelApi
 				list[listModel.AdsId] = listModel
 			}
 			// name 字段覆盖填充
-			for i, relModel := range flowAdsRel {
-				priority[i]["name"] = list[relModel.AdsId].Name
+			for i, relModel := range generate {
+				generate[i]["name"] = list[relModel["ads_id"].(string)].Name
+			}
+			for i, relModel := range dsp {
+				dsp[i]["name"] = list[relModel["ads_id"].(string)].Name
+			}
+			if flowAdTypeRel.IsPriority == 1 {
+				for i, relModel := range priority {
+					priority[i]["name"] = list[relModel["ads_id"].(string)].Name
+				}
 			}
 		}
-		adInfo[flowAdTypeRel.AdType]["priority_list"] = priority
+		adInfo[flowAdTypeRel.AdType]["general_list"] = generate
+		adInfo[flowAdTypeRel.AdType]["dsp_list"] = dsp
+		if flowAdTypeRel.IsPriority == 1 {
+			adInfo[flowAdTypeRel.AdType]["priority_list"] = priority
+		}
 	}
+}
+func fillAppRel(adInfo map[int]map[string]interface{}, flowAdTypeRel *modelApi.FlowAdTypeRelModel, flowId int64, appKey string) {
+	adDevPos := getAdDevPos(appKey, flowAdTypeRel.AdType)
+	log.Println(adDevPos)
+}
+func fillPosPolicy(adInfo map[int]map[string]interface{}, flowAdTypeRel *modelApi.FlowAdTypeRelModel, flowId int64, appKey string) {
+
+}
+func getAdDevPos(appKey string, adType int) map[string]map[string]interface{} {
+	where := (&tool.WhereQuery{}).GenerateWhere(map[string]interface{}{"app_key": appKey})
+	app := modelApi.AdAppDB().GetBy(where)
+	params := map[string]interface{}{
+		"pos_key_type": tool.MAdPosType[adType],
+		"app_id":       app.AppId,
+		"del":          1,
+	}
+	where = (&tool.WhereQuery{}).GenerateWhere(params)
+	adDevPos := modelApi.AdDeverPosDB().GetsBy(where, "")
+	if len(adDevPos) > 0 {
+		rs := make(map[string]map[string]interface{}, 0)
+		for _, po := range adDevPos {
+			rs[po.DeverPosKey] = map[string]interface{}{
+				"pos_key":              po.DeverPosKey,
+				"pos_name":             po.DeverPosName,
+				"state":                po.State,
+				"limit_num":            po.LimitNum,
+				"rate":                 po.Rate,
+				"third_party_block_id": "",
+			}
+		}
+
+		return rs
+	}
+	return nil
 }
 
 // 组合广告商ID列表

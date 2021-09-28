@@ -47,7 +47,7 @@ func (u *userToken) RecordLoginToken(userToken, clientIp string) bool {
 	if customClaims, err := u.userJwt.ParseToken(userToken); err == nil {
 		userId := customClaims.UserId
 		expiresAt := customClaims.ExpiresAt
-		return model.CreateUserFactory("").OauthLoginToken(userId, userToken, expiresAt, clientIp)
+		return model.CreateUserFactory().OauthLoginToken(userId, userToken, expiresAt, clientIp)
 	} else {
 		return false
 	}
@@ -64,7 +64,7 @@ func (u *userToken) RefreshToken(oldToken, clientIp, platform string) (newToken 
 			if customClaims, err := u.userJwt.ParseToken(newToken); err == nil {
 				userId := customClaims.UserId
 				expiresAt := customClaims.ExpiresAt
-				if model.CreateUserFactory("").OauthRefreshToken(userId, expiresAt, oldToken, newToken, clientIp, platform) {
+				if model.CreateUserFactory().OauthRefreshToken(userId, expiresAt, oldToken, newToken, clientIp, platform) {
 					return newToken, true
 				}
 			}
@@ -102,8 +102,7 @@ func (u *userToken) isNotExpired(token string) (*my_jwt.CustomClaims, int) {
 func (u *userToken) IsEffective(token string) bool {
 	customClaims, code := u.isNotExpired(token)
 	if consts.JwtTokenOK == code {
-		//if user_item := Model.CreateUserFactory("").ShowOneItem(customClaims.UserId); user_item != nil {
-		if model.CreateUserFactory("").OauthCheckTokenIsOk(customClaims.UserId, token) {
+		if model.CreateUserFactory().OauthCheckTokenIsOk(customClaims.UserId, token) {
 			return true
 		}
 	}

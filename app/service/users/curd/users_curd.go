@@ -14,7 +14,7 @@ type UsersCurd struct {
 
 func (u *UsersCurd) Store(values map[string]interface{}) bool {
 	values["pass"] = md5_encrypt.MobgiPwd(values["pass"].(string)) // 预先处理密码加密，然后存储在数据库
-	return model.CreateUserFactory("").Store(values)
+	return model.CreateUserFactory().Store(values)
 }
 
 func (u *UsersCurd) Update(values map[string]interface{}) bool {
@@ -24,5 +24,5 @@ func (u *UsersCurd) Update(values map[string]interface{}) bool {
 		values["pass"] = md5_encrypt.MobgiPwd(values["pass"].(string))
 	}
 
-	return model.CreateUserFactory("").Update(values)
+	return model.CreateUserFactory().Update(values)
 }

@@ -5,18 +5,19 @@ import (
 	"goskeleton/app/global/variable"
 	"goskeleton/app/model/tool"
 	"goskeleton/app/utils/md5_encrypt"
+	"log"
 	"strconv"
 	"time"
 
 	"go.uber.org/zap"
 )
 
-func CreateUserFactory(sqlType string) *UsersModel {
-	return &UsersModel{BaseModel: BaseModel{DB: UseDbConn(sqlType)}}
+func CreateUserFactory() *UsersModel {
+	return &UsersModel{BaseModel: BaseModel{DB: UseDbConn("")}}
 }
 
 type UsersModel struct {
-	BaseModel `json:"-"`
+	BaseModel
 	UserBaseInfo
 	Password     string `json:"-" gorm:"password"`
 	Operator     int    `json:"operator"`
@@ -56,8 +57,7 @@ func (u *UsersModel) TableName() string {
 
 // Store 用户注册（写一个最简单的使用账号、密码注册即可）
 func (u *UsersModel) Store(values map[string]interface{}) bool {
-	// sql := "INSERT INTO users(user_name,pass,email,phone,real_name,role_id) VALUES(?,?,?,?,?,?)"
-	result := u.Create(values)
+	result := u.Table(u.TableName()).Create(values)
 	if result.RowsAffected > 0 {
 		return true
 	} else {
@@ -67,8 +67,7 @@ func (u *UsersModel) Store(values map[string]interface{}) bool {
 
 // Login 用户登录
 func (u *UsersModel) Login(userName, pass, ip string) (*UsersModel, string) {
-	sql := "select * from `" + u.TableName() + "` where user_name=? or email=? limit 1"
-	result := u.Raw(sql, userName, userName).First(u)
+	result := u.Table(u.TableName()).Where("user_name=? or email=?", userName, userName).Limit(1).First(u)
 	if result.Error == nil {
 		// 账号密码验证成功
 		if u.IsLock == 1 {
@@ -200,13 +199,13 @@ func (u *UsersModel) Show(where *tool.WhereQuery, limitStart, size int) (counts 
 			return counts, temp
 		}
 	}
+	log.Println(counts)
 	return 0, nil
 }
 
 // Update 更新
 func (u *UsersModel) Update(values map[string]interface{}) bool {
-	//sql := "update users set user_name=?,pass=?,real_name=?,phone=?,email=?,remark=?,avatar=?,updated_at=? WHERE id=?"
-	if u.Where("id=?", values["id"]).Updates(values).RowsAffected >= 0 {
+	if u.Table(u.TableName()).Where("id=?", values["id"]).Updates(values).RowsAffected >= 0 {
 		if u.OauthResetToken(values["id"].(float64), values["pass"].(string)) {
 			return true
 		}
@@ -216,7 +215,7 @@ func (u *UsersModel) Update(values map[string]interface{}) bool {
 
 // Destroy 删除用户以及关联的token记录
 func (u *UsersModel) Destroy(id float64) bool {
-	if u.Delete(u, id).Error == nil {
+	if u.Table(u.TableName()).Delete(u, id).Error == nil {
 		if u.OauthDestroyToken(id) {
 			return true
 		}
@@ -246,10 +245,8 @@ func (u *UsersModel) UserIsExists(userId float64, userName, email, phone string)
 		whereSlice["id"] = []string{"!=", strconv.Itoa(int(userId))}
 	}
 	where := (&tool.WhereQuery{Filter: true}).GenerateWhere(whereSlice)
-	sql := "SELECT * FROM `" + u.TableName() + "` WHERE " + where.QuerySql
-
 	var user UsersModel
-	if result := u.Raw(sql, where.QueryParams...).First(&user); result.Error != nil {
+	if result := u.Table(u.TableName()).Where(where.QuerySql, where.QueryParams...).First(&user); result.Error != nil {
 		return "用户数据查询出错，请重试"
 	} else {
 		if len(email) > 0 && user.Email == email {
@@ -269,7 +266,7 @@ func (u *UsersModel) UserIsExists(userId float64, userName, email, phone string)
 // CheckPass 检查密码
 func (u *UsersModel) CheckPass(id float64, pass string) bool {
 	originalPass := ""
-	u.Raw("SELECT pass FROM `"+u.TableName()+"` WHERE id = ? LIMIT 1", id).First(&originalPass)
+	u.Table(u.TableName()).Select("pass").Where("id = ?", id).Limit(1).First(&originalPass)
 	return pass == originalPass
 }
 
@@ -285,7 +282,7 @@ func (u *UsersModel) ResetPass(id float64, pass string) bool {
 
 // EmailExists 检查密码
 func (u *UsersModel) EmailExists(email string) (userId int) {
-	u.Raw("SELECT id FROM `"+u.TableName()+"` WHERE email = ? LIMIT 1", email).First(&userId)
+	u.Table(u.TableName()).Where("email = ?", email).Limit(1).First(&userId)
 	return
 }
 

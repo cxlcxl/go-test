@@ -5,12 +5,12 @@ func UserGroupDB() *GroupModel {
 }
 
 type GroupModel struct {
-	BaseModel `json:"-"`
-	BaseColumn
+	BaseModel       `json:"-"`
+	BaseColumn      `json:"-"`
 	TopModuleConfig string `gorm:"column:top_module_config" json:"top_module_config"`
 	MenuConfig      string `gorm:"column:menu_config" json:"menu_config"`
 	MenuRight       string `gorm:"column:menu_right" json:"menu_right"`
-	TimeColumns
+	TimeColumns     `json:"-"`
 }
 
 type BaseColumn struct {
