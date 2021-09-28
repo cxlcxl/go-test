@@ -121,6 +121,7 @@ func InitWebRouter() *gin.Engine {
 			report := backend.Group("report/")
 			{
 				report.GET("/info", (&data.Report{}).GetReport)
+				report.GET("/v2/ad", (&data.Report{}).AdReport) // 广告报表
 			}
 
 			// API 板块路由

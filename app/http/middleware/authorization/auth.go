@@ -27,31 +27,32 @@ func CheckTokenAuth() gin.HandlerFunc {
 			context.Abort()
 			return
 		}
-
-		if len(headerParams.Authorization) >= 20 {
-			token := strings.Split(headerParams.Authorization, " ")
-			if len(token) == 2 && len(token[1]) >= 20 {
-				tokenIsEffective := userstoken.CreateUserFactory().IsEffective(token[1])
-				if tokenIsEffective {
-					if customeToken, err := userstoken.CreateUserFactory().ParseToken(token[1]); err == nil {
-						key := variable.ConfigYml.GetString("Token.BindContextKeyName")
-						// token验证通过，同时绑定在请求上下文
-						context.Set(key, customeToken)
-						context.Set("token", token[1])
-						context.Set("user_id", customeToken.UserId)
-						context.Set("username", customeToken.Name)
-						context.Set("email", customeToken.Email)
-					}
-					context.Next()
-				} else {
-					response.ErrorTokenAuthFail(context)
-					return
-				}
-			}
-		} else {
+		if len(headerParams.Authorization) < 20 {
 			response.ErrorTokenAuthFail(context)
 			return
 		}
+		token := strings.Split(headerParams.Authorization, " ")
+		if len(token) != 2 || len(token[1]) < 20 {
+			response.ErrorTokenAuthFail(context)
+			return
+		}
+		if tokenIsEffective := userstoken.CreateUserFactory().IsEffective(token[1]); !tokenIsEffective {
+			response.ErrorTokenAuthFail(context)
+			return
+		}
+		customerToken, err := userstoken.CreateUserFactory().ParseToken(token[1])
+		if err != nil {
+			response.ErrorTokenAuthFail(context)
+			return
+		}
+		key := variable.ConfigYml.GetString("Token.BindContextKeyName")
+		// token验证通过，同时绑定在请求上下文
+		context.Set(key, customerToken)
+		context.Set("token", token[1])
+		context.Set("user_id", customerToken.UserId)
+		context.Set("username", customerToken.Name)
+		context.Set("email", customerToken.Email)
+		context.Next()
 	}
 }
 

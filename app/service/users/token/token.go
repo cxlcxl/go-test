@@ -42,7 +42,7 @@ func (u *userToken) GenerateToken(userid int64, username, realName, email, avata
 	return u.userJwt.CreateToken(customClaims)
 }
 
-// 用户login成功，记录用户token
+// RecordLoginToken 用户login成功，记录用户token
 func (u *userToken) RecordLoginToken(userToken, clientIp string) bool {
 	if customClaims, err := u.userJwt.ParseToken(userToken); err == nil {
 		userId := customClaims.UserId
@@ -76,7 +76,7 @@ func (u *userToken) RefreshToken(oldToken, clientIp, platform string) (newToken 
 	return "", false
 }
 
-// 销毁token，基本用不到，因为一个网站的用户退出都是直接关闭浏览器窗口，极少有户会点击“注销、退出”等按钮，销毁token其实无多大意义
+// DestroyToken 销毁token，基本用不到，因为一个网站的用户退出都是直接关闭浏览器窗口，极少有户会点击“注销、退出”等按钮，销毁token其实无多大意义
 func (u *userToken) DestroyToken() {
 
 }
@@ -84,7 +84,6 @@ func (u *userToken) DestroyToken() {
 // 判断token是否未过期
 func (u *userToken) isNotExpired(token string) (*my_jwt.CustomClaims, int) {
 	if customClaims, err := u.userJwt.ParseToken(token); err == nil {
-
 		if time.Now().Unix()-customClaims.ExpiresAt < 0 {
 			// token有效
 			return customClaims, consts.JwtTokenOK
@@ -98,7 +97,7 @@ func (u *userToken) isNotExpired(token string) (*my_jwt.CustomClaims, int) {
 	}
 }
 
-// 判断token是否有效（未过期+数据库用户信息正常）
+// IsEffective 判断token是否有效（未过期+数据库用户信息正常）
 func (u *userToken) IsEffective(token string) bool {
 	customClaims, code := u.isNotExpired(token)
 	if consts.JwtTokenOK == code {
@@ -109,7 +108,7 @@ func (u *userToken) IsEffective(token string) bool {
 	return false
 }
 
-// 将 token 解析为绑定时传递的参数
+// ParseToken 将 token 解析为绑定时传递的参数
 func (u *userToken) ParseToken(tokenStr string) (CustomClaims my_jwt.CustomClaims, err error) {
 	if customClaims, err := u.userJwt.ParseToken(tokenStr); err == nil {
 		return *customClaims, nil
